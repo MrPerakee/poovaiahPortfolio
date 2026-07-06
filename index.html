@@ -202,25 +202,6 @@ nav.scrolled.glass-on {
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), inset 0 -1px 0 rgba(255,255,255,0.15);
 }
 
-/* ── LIQUID DROPLET SQUISH ── */
-.squishable {
-  display: inline-block;
-  transform-origin: 50% 0%;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.16s cubic-bezier(0.34, 1.2, 0.64, 1);
-  will-change: transform;
-}
-.squishable.pressed { transform: scaleX(1.22) scaleY(0.62); }
-.squishable.rebound { animation: dropletRebound 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-@keyframes dropletRebound {
-  0%   { transform: scaleX(1.22) scaleY(0.62); }
-  32%  { transform: scaleX(0.90) scaleY(1.16); }
-  56%  { transform: scaleX(1.07) scaleY(0.93); }
-  76%  { transform: scaleX(0.97) scaleY(1.04); }
-  90%  { transform: scaleX(1.01) scaleY(0.99); }
-  100% { transform: scale(1); }
-}
 .nav-links a.nav-resume:hover {
   background: var(--ember); border-color: var(--ember); color: var(--bg);
 }
@@ -1023,6 +1004,72 @@ footer {
   background: rgba(255,255,255,0.35);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
 }
+
+/* ── RESUME MODAL ── */
+.resume-modal {
+  position: fixed; inset: 0; z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--gutter);
+  background: rgba(8,8,10,0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.resume-modal.open { opacity: 1; pointer-events: auto; }
+[data-theme="light"] .resume-modal { background: rgba(58,40,23,0.28); }
+.resume-modal-card {
+  width: min(430px, 100%);
+  background:
+    linear-gradient(150deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015) 55%),
+    var(--bg-card);
+  border: 1px solid var(--line-mid);
+  border-radius: 18px;
+  padding: clamp(24px, 5vw, 36px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 30px 80px rgba(0,0,0,0.45);
+  position: relative;
+  transform: translateY(14px) scale(0.98);
+  transition: transform 0.35s var(--ease-fast);
+}
+.resume-modal.open .resume-modal-card { transform: translateY(0) scale(1); }
+[data-theme="light"] .resume-modal-card {
+  background:
+    linear-gradient(150deg, rgba(255,255,255,0.8), rgba(255,255,255,0.45)),
+    #f2ecdf;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 30px 70px rgba(58,40,23,0.2);
+}
+.resume-modal-label {
+  font-size: var(--f-label); letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--ember); margin-bottom: 12px;
+}
+.resume-modal-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(1.4rem, 5vw, 1.8rem); font-weight: 300;
+  color: var(--t-primary); line-height: 1.2; margin-bottom: 10px;
+}
+.resume-modal-title em { font-style: italic; color: var(--ember); }
+.resume-modal-sub { font-size: var(--f-small); color: var(--t-dim); margin-bottom: 22px; line-height: 1.5; }
+.resume-modal-options { display: flex; flex-direction: column; gap: 10px; }
+.resume-modal-options button {
+  font-family: inherit; font-size: var(--f-small); letter-spacing: 0.04em;
+  text-align: left; padding: 13px 20px;
+  color: var(--t-primary);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line-mid); border-radius: 999px;
+  cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+.resume-modal-options button::after { content: '\2193'; color: var(--ember); margin-left: 12px; }
+.resume-modal-options button:hover { border-color: var(--ember); background: var(--ember-glow); }
+.resume-modal-options button.ghost { border-style: dashed; color: var(--t-mid); }
+[data-theme="light"] .resume-modal-options button { background: rgba(255,255,255,0.45); }
+.resume-modal-close {
+  position: absolute; top: 14px; right: 16px;
+  background: none; border: none; font-size: 15px;
+  color: var(--t-dim); cursor: pointer; transition: color 0.25s;
+}
+.resume-modal-close:hover { color: var(--t-primary); }
 .mob-close {
   position: absolute; top: 20px; right: var(--gutter);
   background: none; border: none; font-size: 20px; color: var(--t-dim);
@@ -1267,6 +1314,22 @@ footer {
   <a href="#foundations"  onclick="closeMob()">Foundations</a>
   <a href="#connect"      onclick="closeMob()">Connect</a>
   <a href="#" class="mob-resume" onclick="downloadResume(event)">Resume &#8595;</a>
+</div>
+
+<!-- ── RESUME MODAL ── -->
+<div class="resume-modal" id="resumeModal" aria-hidden="true">
+  <div class="resume-modal-card">
+    <button class="resume-modal-close" onclick="closeResumeModal()" aria-label="Close">&#10005;</button>
+    <p class="resume-modal-label">Resume</p>
+    <h3 class="resume-modal-title">What would you like<br><em>to hire Haren as?</em></h3>
+    <p class="resume-modal-sub">Your answer shapes the emphasis — same story, different lead.</p>
+    <div class="resume-modal-options">
+      <button onclick="serveResume('creative')">Creative Director</button>
+      <button onclick="serveResume('brand')">Brand &amp; Identity Consultant</button>
+      <button onclick="serveResume('venture')">Venture Architect</button>
+      <button class="ghost" onclick="serveResume('creative')">Just exploring — the standard one</button>
+    </div>
+  </div>
 </div>
 
 <!-- NAV -->
@@ -2098,27 +2161,35 @@ function toggleTheme() {
     { radius: 'pill', edge: 0.3, scale: -95, offsets: [0, 4, 8], brightness: 56, opacity: 0.9, blur: 4, displace: 0.5 });
 })();
 
-/* ── DROPLET SQUISH — resume buttons behave like pressed water drops ── */
-document.querySelectorAll('.nav-resume, .mob-resume').forEach(el => {
-  el.classList.add('squishable');
-  const press = () => { el.classList.remove('rebound'); el.classList.add('pressed'); };
-  const release = () => {
-    if (!el.classList.contains('pressed')) return;
-    el.classList.remove('pressed');
-    el.classList.add('rebound');
-  };
-  el.addEventListener('pointerdown', press);
-  el.addEventListener('pointerup', release);
-  el.addEventListener('pointerleave', release);
-  el.addEventListener('pointercancel', release);
-  el.addEventListener('animationend', () => el.classList.remove('rebound'));
-});
-
+const RESUME_FILES = {
+  creative: 'resume/Haren_Poovaiah_Resume.pdf',
+  brand: 'resume/Haren_Poovaiah_Resume_Brand.pdf',
+  venture: 'resume/Haren_Poovaiah_Resume_Venture.pdf'
+};
 function downloadResume(e) {
   e.preventDefault();
-  document.getElementById('resumeLink').click();
   closeMob();
+  document.getElementById('resumeModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
+function closeResumeModal() {
+  document.getElementById('resumeModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function serveResume(kind) {
+  const a = document.createElement('a');
+  a.href = RESUME_FILES[kind] || RESUME_FILES.creative;
+  a.download = 'Haren_Poovaiah_Resume.pdf';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  closeResumeModal();
+}
+document.getElementById('resumeLink').addEventListener('click', downloadResume);
+document.getElementById('resumeModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeResumeModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeResumeModal(); });
 function openMob()  { document.getElementById('mobMenu').classList.add('open'); document.body.style.overflow = 'hidden'; }
 function closeMob() { document.getElementById('mobMenu').classList.remove('open'); document.body.style.overflow = ''; }
 
