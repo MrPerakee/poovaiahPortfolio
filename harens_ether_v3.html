@@ -158,6 +158,16 @@ nav.scrolled {
 [data-theme="light"] nav.scrolled {
   background: rgba(245,240,232,0.88);
 }
+
+/* ── GLASS SURFACE (nav refraction — Chromium only, added via JS) ── */
+nav.scrolled.glass-on {
+  background: rgba(12,12,16,0.62);
+  backdrop-filter: url(#glassNavFilter) blur(4px) saturate(1.3);
+}
+[data-theme="light"] nav.scrolled.glass-on {
+  background: rgba(245,240,232,0.58);
+  backdrop-filter: url(#glassNavFilter) blur(4px) saturate(1.15) brightness(1.03);
+}
 .nav-logo {
   font-family: 'Fraunces', Georgia, serif;
   font-size: 1rem; font-weight: 400; letter-spacing: 0.1em;
@@ -562,7 +572,15 @@ section {
   padding: clamp(16px,2vw,24px) clamp(24px,3vw,36px) clamp(20px,2.5vw,30px);
   padding-left: calc(clamp(24px,3vw,36px) + 28px + 16px);
   border-top: 1px solid var(--line);
+  background: linear-gradient(160deg, rgba(255,255,255,0.03), rgba(255,255,255,0) 55%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
   display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: start;
+}
+[data-theme="light"] .brand-content {
+  background: linear-gradient(160deg, rgba(255,255,255,0.5), rgba(255,255,255,0.08) 60%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
 }
 .brand-desc {
   font-size: var(--f-body); color: var(--t-mid); line-height: 1.8;
@@ -645,6 +663,20 @@ section {
   padding: 0 0 clamp(16px,2.5vw,28px);
   display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: start;
 }
+.project-item.open .project-content {
+  background: linear-gradient(140deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012) 45%, rgba(255,255,255,0) 75%);
+  backdrop-filter: blur(9px) saturate(1.2);
+  -webkit-backdrop-filter: blur(9px) saturate(1.2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: clamp(16px,2vw,22px) clamp(18px,2.5vw,26px);
+  margin-bottom: clamp(14px,2vw,22px);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.05), 0 10px 28px rgba(0,0,0,0.14);
+}
+[data-theme="light"] .project-item.open .project-content {
+  background: linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.16) 60%, rgba(255,255,255,0.05));
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.75), 0 10px 24px rgba(58,40,23,0.07);
+}
 .project-desc { font-size: var(--f-body); color: var(--t-mid); line-height: 1.8; max-width: 520px; }
 .project-tags {
   list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;
@@ -697,6 +729,20 @@ section {
   max-height: 300px; opacity: 1; padding-top: 14px;
   border-top: 1px solid var(--line); margin-top: 14px;
 }
+.process-step.open {
+  background:
+    linear-gradient(150deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01) 55%, rgba(255,255,255,0) 80%),
+    var(--bg-hover);
+  backdrop-filter: blur(7px) saturate(1.15);
+  -webkit-backdrop-filter: blur(7px) saturate(1.15);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.05);
+}
+[data-theme="light"] .process-step.open {
+  background:
+    linear-gradient(150deg, rgba(255,255,255,0.55), rgba(255,255,255,0.12) 60%),
+    var(--bg-hover);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.7);
+}
 .process-more {
   font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
   color: var(--ember); opacity: 0.6; margin-top: 12px;
@@ -746,6 +792,20 @@ section {
 .exp-details {
   list-style: none; display: flex; flex-direction: column; gap: 6px;
   border-left: 1px solid var(--line); padding-left: 16px;
+}
+.exp-item.open .exp-details {
+  background: linear-gradient(140deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01) 50%, rgba(255,255,255,0) 80%);
+  backdrop-filter: blur(9px) saturate(1.15);
+  -webkit-backdrop-filter: blur(9px) saturate(1.15);
+  border: 1px solid var(--line);
+  border-left: 1px solid var(--line-mid);
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.05), 0 8px 22px rgba(0,0,0,0.12);
+}
+[data-theme="light"] .exp-item.open .exp-details {
+  background: linear-gradient(140deg, rgba(255,255,255,0.55), rgba(255,255,255,0.14) 60%);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.75), 0 8px 20px rgba(58,40,23,0.06);
 }
 .exp-details li {
   font-size: var(--f-body); color: var(--t-mid); line-height: 1.75;
@@ -1894,6 +1954,72 @@ function toggleTheme() {
 })();
 
 /* ── MOBILE MENU ── */
+/* ── GLASS NAV — GlassSurface refraction (Chromium; others keep frosted blur) ── */
+(function initGlassNav() {
+  const ua = navigator.userAgent;
+  const isFirefox = /firefox/i.test(ua);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  if (isFirefox || isSafari) return;
+  if (!(window.CSS && CSS.supports && CSS.supports('backdrop-filter', 'url(#x)'))) return;
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;';
+  svg.innerHTML = '<defs><filter id="glassNavFilter" color-interpolation-filters="sRGB" x="0%" y="0%" width="100%" height="100%">'
+    + '<feImage id="glassNavMap" x="0" y="0" preserveAspectRatio="none" result="map"/>'
+    + '<feDisplacementMap id="glassDispR" in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="B" result="dr"/>'
+    + '<feColorMatrix in="dr" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="r"/>'
+    + '<feDisplacementMap id="glassDispG" in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="B" result="dg"/>'
+    + '<feColorMatrix in="dg" type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="g"/>'
+    + '<feDisplacementMap id="glassDispB" in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="B" result="db"/>'
+    + '<feColorMatrix in="db" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="b"/>'
+    + '<feBlend in="r" in2="g" mode="screen" result="rg"/>'
+    + '<feBlend in="rg" in2="b" mode="screen" result="out"/>'
+    + '<feGaussianBlur in="out" stdDeviation="0.4"/>'
+    + '</filter></defs>';
+  document.body.appendChild(svg);
+
+  /* subtle tuning — depth, not spectacle */
+  const SCALE = -26, R_OFF = 0, G_OFF = 2, B_OFF = 4;
+  const BRIGHTNESS = 50, OPACITY = 0.93, DISPLACE_BLUR = 11;
+
+  const navEl = document.getElementById('nav');
+  const feImage = svg.querySelector('#glassNavMap');
+
+  function buildMap(w, h) {
+    const edge = Math.min(w, h) * 0.14;
+    const m = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '"><defs>'
+      + '<linearGradient id="gx" x1="100%" y1="0%" x2="0%" y2="0%"><stop offset="0%" stop-color="#000"/><stop offset="100%" stop-color="red"/></linearGradient>'
+      + '<linearGradient id="gy" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#000"/><stop offset="100%" stop-color="blue"/></linearGradient>'
+      + '</defs>'
+      + '<rect width="' + w + '" height="' + h + '" fill="black"/>'
+      + '<rect width="' + w + '" height="' + h + '" fill="url(#gx)"/>'
+      + '<rect width="' + w + '" height="' + h + '" fill="url(#gy)" style="mix-blend-mode:difference"/>'
+      + '<rect x="' + edge + '" y="' + edge + '" width="' + (w - edge * 2) + '" height="' + (h - edge * 2)
+      + '" fill="hsl(0 0% ' + BRIGHTNESS + '% / ' + OPACITY + ')" style="filter:blur(' + DISPLACE_BLUR + 'px)"/>'
+      + '</svg>';
+    return 'data:image/svg+xml,' + encodeURIComponent(m);
+  }
+
+  function update() {
+    const rect = navEl.getBoundingClientRect();
+    const w = Math.max(1, Math.round(rect.width));
+    const h = Math.max(1, Math.round(rect.height));
+    feImage.setAttribute('width', w);
+    feImage.setAttribute('height', h);
+    feImage.setAttribute('href', buildMap(w, h));
+    svg.querySelector('#glassDispR').setAttribute('scale', SCALE + R_OFF);
+    svg.querySelector('#glassDispG').setAttribute('scale', SCALE + G_OFF);
+    svg.querySelector('#glassDispB').setAttribute('scale', SCALE + B_OFF);
+  }
+
+  update();
+  new ResizeObserver(update).observe(navEl);
+  navEl.classList.add('glass-on');
+})();
+
 function downloadResume(e) {
   e.preventDefault();
   document.getElementById('resumeLink').click();
