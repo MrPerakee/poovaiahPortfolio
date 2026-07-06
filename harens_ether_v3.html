@@ -188,7 +188,38 @@ nav.scrolled.glass-on {
 .nav-links a.nav-resume {
   color: var(--ember); border: 1px solid var(--line-mid);
   border-radius: 999px; padding: 7px 14px; margin-left: 6px;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(6px) saturate(1.2);
+  -webkit-backdrop-filter: blur(6px) saturate(1.2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(255,255,255,0.03);
   transition: color 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+}
+.nav-links a.nav-resume.glass-on {
+  backdrop-filter: url(#glassPillFilter) blur(1px) saturate(1.3);
+}
+[data-theme="light"] .nav-links a.nav-resume {
+  background: rgba(255,255,255,0.28);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), inset 0 -1px 0 rgba(255,255,255,0.15);
+}
+
+/* ── LIQUID DROPLET SQUISH ── */
+.squishable {
+  display: inline-block;
+  transform-origin: 50% 0%;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.16s cubic-bezier(0.34, 1.2, 0.64, 1);
+  will-change: transform;
+}
+.squishable.pressed { transform: scaleX(1.22) scaleY(0.62); }
+.squishable.rebound { animation: dropletRebound 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+@keyframes dropletRebound {
+  0%   { transform: scaleX(1.22) scaleY(0.62); }
+  32%  { transform: scaleX(0.90) scaleY(1.16); }
+  56%  { transform: scaleX(1.07) scaleY(0.93); }
+  76%  { transform: scaleX(0.97) scaleY(1.04); }
+  90%  { transform: scaleX(1.01) scaleY(0.99); }
+  100% { transform: scale(1); }
 }
 .nav-links a.nav-resume:hover {
   background: var(--ember); border-color: var(--ember); color: var(--bg);
@@ -960,7 +991,19 @@ footer {
   color: var(--t-mid); text-decoration: none; transition: color 0.25s;
 }
 .mob-overlay a:hover { color: var(--ember); }
-.mob-overlay a.mob-resume { color: var(--ember); font-style: italic; }
+.mob-overlay a.mob-resume {
+  color: var(--ember); font-style: italic;
+  border: 1px solid var(--line-mid); border-radius: 999px;
+  padding: 10px 32px;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+[data-theme="light"] .mob-overlay a.mob-resume {
+  background: rgba(255,255,255,0.35);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+}
 .mob-close {
   position: absolute; top: 20px; right: var(--gutter);
   background: none; border: none; font-size: 20px; color: var(--t-dim);
@@ -1954,8 +1997,8 @@ function toggleTheme() {
 })();
 
 /* ── MOBILE MENU ── */
-/* ── GLASS NAV — GlassSurface refraction (Chromium; others keep frosted blur) ── */
-(function initGlassNav() {
+/* ── GLASS SURFACES — GlassSurface refraction (Chromium; others keep frosted blur) ── */
+(function initGlass() {
   const ua = navigator.userAgent;
   const isFirefox = /firefox/i.test(ua);
   const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
@@ -1967,58 +2010,86 @@ function toggleTheme() {
   svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
   svg.setAttribute('aria-hidden', 'true');
   svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;';
-  svg.innerHTML = '<defs><filter id="glassNavFilter" color-interpolation-filters="sRGB" x="0%" y="0%" width="100%" height="100%">'
-    + '<feImage id="glassNavMap" x="0" y="0" preserveAspectRatio="none" result="map"/>'
-    + '<feDisplacementMap id="glassDispR" in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="B" result="dr"/>'
-    + '<feColorMatrix in="dr" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="r"/>'
-    + '<feDisplacementMap id="glassDispG" in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="B" result="dg"/>'
-    + '<feColorMatrix in="dg" type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="g"/>'
-    + '<feDisplacementMap id="glassDispB" in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="B" result="db"/>'
-    + '<feColorMatrix in="db" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="b"/>'
-    + '<feBlend in="r" in2="g" mode="screen" result="rg"/>'
-    + '<feBlend in="rg" in2="b" mode="screen" result="out"/>'
-    + '<feGaussianBlur in="out" stdDeviation="0.4"/>'
-    + '</filter></defs>';
+  const defs = document.createElementNS(NS, 'defs');
+  svg.appendChild(defs);
   document.body.appendChild(svg);
 
-  /* subtle tuning — depth, not spectacle */
-  const SCALE = -26, R_OFF = 0, G_OFF = 2, B_OFF = 4;
-  const BRIGHTNESS = 50, OPACITY = 0.93, DISPLACE_BLUR = 11;
+  function makeGlass(el, id, o) {
+    const f = document.createElementNS(NS, 'filter');
+    f.setAttribute('id', id);
+    f.setAttribute('color-interpolation-filters', 'sRGB');
+    f.setAttribute('x', '0%'); f.setAttribute('y', '0%');
+    f.setAttribute('width', '100%'); f.setAttribute('height', '100%');
+    f.innerHTML = '<feImage x="0" y="0" preserveAspectRatio="none" result="map"/>'
+      + '<feDisplacementMap in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="B" result="dr"/>'
+      + '<feColorMatrix in="dr" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="r"/>'
+      + '<feDisplacementMap in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="B" result="dg"/>'
+      + '<feColorMatrix in="dg" type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="g"/>'
+      + '<feDisplacementMap in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="B" result="db"/>'
+      + '<feColorMatrix in="db" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="b"/>'
+      + '<feBlend in="r" in2="g" mode="screen" result="rg"/>'
+      + '<feBlend in="rg" in2="b" mode="screen" result="out"/>'
+      + '<feGaussianBlur in="out" stdDeviation="' + o.displace + '"/>';
+    defs.appendChild(f);
+    const feImage = f.querySelector('feImage');
+    const disps = f.querySelectorAll('feDisplacementMap');
 
-  const navEl = document.getElementById('nav');
-  const feImage = svg.querySelector('#glassNavMap');
+    function buildMap(w, h) {
+      const r = o.radius === 'pill' ? h / 2 : o.radius;
+      const edge = Math.min(w, h) * o.edge;
+      const m = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '"><defs>'
+        + '<linearGradient id="gx" x1="100%" y1="0%" x2="0%" y2="0%"><stop offset="0%" stop-color="#000"/><stop offset="100%" stop-color="red"/></linearGradient>'
+        + '<linearGradient id="gy" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#000"/><stop offset="100%" stop-color="blue"/></linearGradient>'
+        + '</defs>'
+        + '<rect width="' + w + '" height="' + h + '" fill="black"/>'
+        + '<rect width="' + w + '" height="' + h + '" rx="' + r + '" fill="url(#gx)"/>'
+        + '<rect width="' + w + '" height="' + h + '" rx="' + r + '" fill="url(#gy)" style="mix-blend-mode:difference"/>'
+        + '<rect x="' + edge + '" y="' + edge + '" width="' + (w - edge * 2) + '" height="' + (h - edge * 2)
+        + '" rx="' + r + '" fill="hsl(0 0% ' + o.brightness + '% / ' + o.opacity + ')" style="filter:blur(' + o.blur + 'px)"/>'
+        + '</svg>';
+      return 'data:image/svg+xml,' + encodeURIComponent(m);
+    }
 
-  function buildMap(w, h) {
-    const edge = Math.min(w, h) * 0.14;
-    const m = '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '"><defs>'
-      + '<linearGradient id="gx" x1="100%" y1="0%" x2="0%" y2="0%"><stop offset="0%" stop-color="#000"/><stop offset="100%" stop-color="red"/></linearGradient>'
-      + '<linearGradient id="gy" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#000"/><stop offset="100%" stop-color="blue"/></linearGradient>'
-      + '</defs>'
-      + '<rect width="' + w + '" height="' + h + '" fill="black"/>'
-      + '<rect width="' + w + '" height="' + h + '" fill="url(#gx)"/>'
-      + '<rect width="' + w + '" height="' + h + '" fill="url(#gy)" style="mix-blend-mode:difference"/>'
-      + '<rect x="' + edge + '" y="' + edge + '" width="' + (w - edge * 2) + '" height="' + (h - edge * 2)
-      + '" fill="hsl(0 0% ' + BRIGHTNESS + '% / ' + OPACITY + ')" style="filter:blur(' + DISPLACE_BLUR + 'px)"/>'
-      + '</svg>';
-    return 'data:image/svg+xml,' + encodeURIComponent(m);
+    function update() {
+      const rect = el.getBoundingClientRect();
+      const w = Math.max(1, Math.round(rect.width));
+      const h = Math.max(1, Math.round(rect.height));
+      feImage.setAttribute('width', w);
+      feImage.setAttribute('height', h);
+      feImage.setAttribute('href', buildMap(w, h));
+      o.offsets.forEach((off, i) => disps[i].setAttribute('scale', o.scale + off));
+    }
+
+    update();
+    new ResizeObserver(update).observe(el);
+    el.classList.add('glass-on');
   }
 
-  function update() {
-    const rect = navEl.getBoundingClientRect();
-    const w = Math.max(1, Math.round(rect.width));
-    const h = Math.max(1, Math.round(rect.height));
-    feImage.setAttribute('width', w);
-    feImage.setAttribute('height', h);
-    feImage.setAttribute('href', buildMap(w, h));
-    svg.querySelector('#glassDispR').setAttribute('scale', SCALE + R_OFF);
-    svg.querySelector('#glassDispG').setAttribute('scale', SCALE + G_OFF);
-    svg.querySelector('#glassDispB').setAttribute('scale', SCALE + B_OFF);
-  }
+  /* nav bar — wide pane, gentle edge bend */
+  makeGlass(document.getElementById('nav'), 'glassNavFilter',
+    { radius: 0, edge: 0.14, scale: -26, offsets: [0, 2, 4], brightness: 50, opacity: 0.93, blur: 11, displace: 0.4 });
 
-  update();
-  new ResizeObserver(update).observe(navEl);
-  navEl.classList.add('glass-on');
+  /* resume pill — small lens, droplet-strength refraction */
+  const pill = document.querySelector('.nav-resume');
+  if (pill) makeGlass(pill, 'glassPillFilter',
+    { radius: 'pill', edge: 0.3, scale: -95, offsets: [0, 4, 8], brightness: 56, opacity: 0.9, blur: 4, displace: 0.5 });
 })();
+
+/* ── DROPLET SQUISH — resume buttons behave like pressed water drops ── */
+document.querySelectorAll('.nav-resume, .mob-resume').forEach(el => {
+  el.classList.add('squishable');
+  const press = () => { el.classList.remove('rebound'); el.classList.add('pressed'); };
+  const release = () => {
+    if (!el.classList.contains('pressed')) return;
+    el.classList.remove('pressed');
+    el.classList.add('rebound');
+  };
+  el.addEventListener('pointerdown', press);
+  el.addEventListener('pointerup', release);
+  el.addEventListener('pointerleave', release);
+  el.addEventListener('pointercancel', release);
+  el.addEventListener('animationend', () => el.classList.remove('rebound'));
+});
 
 function downloadResume(e) {
   e.preventDefault();
