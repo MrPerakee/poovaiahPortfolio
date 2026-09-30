@@ -2,7 +2,32 @@
 window.VISUAL_ASSETS = [
   {
     "type": "direction",
-    "title": "Guntur Gourmet",
+    "title": "Guntur Gourmet — The Spread",
+    "meta": "Art direction · Food shoot",
+    "src": "visual/direction/guntur-gourmet-the-spread.webp",
+    "thumb": "visual/direction/thumbs/guntur-gourmet-the-spread.webp",
+    "size": "wide"
+  },
+  {
+    "type": "video",
+    "title": "Guntur Gourmet — Brand Reel",
+    "meta": "Brand film · 22s",
+    "src": "visual/video/guntur-gourmet-brand-reel.mp4",
+    "poster": "visual/video/thumbs/guntur-gourmet-brand-reel.webp",
+    "size": "tall",
+    "preview": "visual/video/thumbs/guntur-gourmet-brand-reel-preview.mp4"
+  },
+  {
+    "type": "direction",
+    "title": "Guntur Gourmet — Served by Hand",
+    "meta": "Art direction · Food shoot",
+    "src": "visual/direction/guntur-gourmet-served-by-hand.webp",
+    "thumb": "visual/direction/thumbs/guntur-gourmet-served-by-hand.webp",
+    "size": "tall"
+  },
+  {
+    "type": "direction",
+    "title": "Guntur Gourmet — Packaging",
     "meta": "Packaging direction · Real-world packaging",
     "src": "assets/img/guntur-gourmet-packaging.webp",
     "thumb": "assets/img/guntur-gourmet-packaging.webp",
@@ -45,21 +70,9 @@ window.VISUAL_ASSETS = [
     "size": "wide"
   },
   {
-    "type": "direction",
-    "title": "Guntur Gourmet — Brand Film",
-    "meta": "Direction",
-    "size": ""
-  },
-  {
     "type": "video",
     "title": "Events",
     "meta": "Event coverage",
-    "size": ""
-  },
-  {
-    "type": "direction",
-    "title": "Shoot Direction",
-    "meta": "Art direction · Styling",
     "size": ""
   }
 ];

@@ -100,6 +100,10 @@ def do_video(src, kind):
                     "-movflags", "+faststart", str(out)], check=True)
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", "1", "-i", str(out),
                     "-frames:v", "1", "-vf", f"scale='min({THUMB_PX},iw)':-2", str(poster)], check=True)
+    preview = ROOT / "visual" / kind / "thumbs" / (out.stem + "-preview.mp4")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(out), "-t", "8", "-an",
+                    "-vf", "scale='min(540,iw)':-2", "-c:v", "libx264", "-crf", "30", "-preset", "slow",
+                    "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(preview)], check=True)
     probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
                             "stream=width,height", "-of", "csv=p=0", str(out)],
                            capture_output=True, text=True).stdout.strip().split(",")
@@ -107,7 +111,7 @@ def do_video(src, kind):
     mb = out.stat().st_size / 1e6
     if mb > 95:
         print(f"  ! {out.name} is {mb:.0f} MB — over GitHub's 100 MB limit; trim or host externally.")
-    return {"src": rel(out), "poster": rel(poster)}, auto_size(w, h)
+    return {"src": rel(out), "poster": rel(poster), "preview": rel(preview)}, auto_size(w, h)
 
 
 def rel(p):
