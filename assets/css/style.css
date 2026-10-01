@@ -1019,3 +1019,8 @@ html.view-open,html.view-open body{overflow:hidden}
 .vf-m>img+video{position:absolute;inset:0;opacity:0;transition:opacity .4s}
 .vf:hover .vf-m>img+video{opacity:1}
 @media(hover:none){.lb-nav{cursor:pointer}}
+
+/* Karnasree */
+.t-farm{background:linear-gradient(125deg,#0b1007,#6E8B3D 36%,#C9A04A 64%,#0a0c05);background-size:280% 280%}
+.co-site{margin-top:0;flex-shrink:0;white-space:nowrap}
+@media(max-width:600px){.co-site{margin-top:.2rem}}
