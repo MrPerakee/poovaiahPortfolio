@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="robots" content="noindex">
+<title>Ether — a world of sound</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Instrument+Serif:ital@0;1&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ether.css">
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<header class="top">
+  <a href="../" class="back" aria-label="Back to Haren's portfolio">
+    <svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span>Haren</span>
+  </a>
+  <div class="brand">Ether</div>
+  <button class="chip" id="saChip" aria-label="Tuning">Sa <b id="saHz">136.1</b></button>
+</header>
+
+<div class="readout" id="readout">
+  <span id="roHz">—</span><i>·</i><span id="roSw">Sa</span><i>·</i><span id="roMode">mode 3:1</span>
+</div>
+
+<div class="layers" id="layers">
+  <button data-l="flower" class="on" aria-label="Flower of life">✿</button>
+  <button data-l="tree" class="on" aria-label="Golden tree">⚘</button>
+  <button data-l="cym" class="on" aria-label="Cymatics">◎</button>
+</div>
+
+<section class="sheet" id="sheet">
+
+  <!-- HANDPAN -->
+  <div class="panel" data-p="handpan">
+    <div class="ph"><h2>Handpan</h2><p id="hpScale">Mayamalavagowla</p></div>
+    <div class="hp" id="hp"></div>
+  </div>
+
+  <!-- SYNTH PAD -->
+  <div class="panel" data-p="pad">
+    <div class="ph"><h2>Synth Pad</h2><p>slide across — up is brighter</p></div>
+    <div class="xy" id="xy"><div class="xy-cols" id="xyCols"></div></div>
+  </div>
+
+  <!-- DJEMBE -->
+  <div class="panel" data-p="djembe">
+    <div class="ph"><h2>Djembe</h2><p>bass · tone · slap</p></div>
+    <div class="dj" id="dj">
+      <div class="dj-slap"><span>slap</span></div>
+      <div class="dj-tone"><span>tone</span></div>
+      <div class="dj-bass"><span>bass</span></div>
+    </div>
+  </div>
+
+  <!-- OM -->
+  <div class="panel" data-p="om">
+    <div class="ph"><h2>Om</h2><p>A · U · M — a breathing drone</p></div>
+    <div class="om">
+      <button class="om-btn" id="omBtn" aria-label="Play Om">ॐ</button>
+      <div class="om-ctl">
+        <label>Pitch <b id="omHz">136.1 Hz</b></label>
+        <input type="range" id="omF" min="0" max="1000" value="500">
+        <label>Breath <b id="omBr">7 s</b></label>
+        <input type="range" id="omB" min="3" max="14" value="7" step="0.5">
+        <label class="tog"><input type="checkbox" id="omBin"> Binaural <b id="omBeatL">7.83</b> <em>🎧</em></label>
+      </div>
+    </div>
+    <div class="freqs" id="freqs"></div>
+  </div>
+
+  <!-- RAGA -->
+  <div class="panel" data-p="raga">
+    <div class="ph"><h2>Raga</h2><p id="ragaInfo">Melakarta 15</p></div>
+    <div class="ragas" id="ragas"></div>
+    <div class="swaras" id="swaras"></div>
+    <div class="raga-row">
+      <button class="pill" id="tanBtn">Tanpura</button>
+      <button class="pill" id="aroBtn">Arohanam · Avarohanam</button>
+    </div>
+    <div class="sa-row">
+      <span class="lbl">Sa</span>
+      <div class="sa-chips" id="saChips"></div>
+    </div>
+    <input type="range" id="saFine" min="-50" max="50" value="0" aria-label="Fine tune Sa">
+  </div>
+
+  <!-- MIC -->
+  <div class="panel" data-p="mic">
+    <div class="ph"><h2>Listen</h2><p>the world around you, drawn in sand</p></div>
+    <div class="mic">
+      <button class="mic-btn" id="micBtn"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Start listening</span></button>
+      <div class="mic-read">
+        <div class="mic-hz" id="micHz">— Hz</div>
+        <div class="mic-note" id="micNote">sing, hum, or play</div>
+        <div class="meter"><i id="micLvl"></i></div>
+      </div>
+    </div>
+    <p class="fine">Sound is analysed on your phone only — nothing is recorded or sent.</p>
+  </div>
+
+</section>
+
+<nav class="dock" id="dock">
+  <button data-p="handpan" aria-label="Handpan"><svg viewBox="0 0 32 32"><ellipse cx="16" cy="16" rx="13" ry="13"/><circle cx="16" cy="16" r="4"/><circle cx="16" cy="7.5" r="2"/><circle cx="24" cy="13" r="2"/><circle cx="21.5" cy="23" r="2"/><circle cx="10.5" cy="23" r="2"/><circle cx="8" cy="13" r="2"/></svg><span>Handpan</span></button>
+  <button data-p="pad" aria-label="Synth pad"><svg viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="4"/><path d="M12 4v24M20 4v24M4 16h24" opacity=".45"/><circle cx="20" cy="12" r="2.6" class="fill"/></svg><span>Pad</span></button>
+  <button data-p="djembe" aria-label="Djembe"><svg viewBox="0 0 32 32"><ellipse cx="16" cy="6" rx="10" ry="2.6"/><path d="M6 6c0 6 6 8 7 12l-2 10h10l-2-10c1-4 7-6 7-12"/><path d="M9 9l4 4M23 9l-4 4" opacity=".5"/></svg><span>Djembe</span></button>
+  <button data-p="om" aria-label="Om"><span class="om-g">ॐ</span><span>Om</span></button>
+  <button data-p="raga" aria-label="Raga and tanpura"><svg viewBox="0 0 32 32"><circle cx="16" cy="24" r="6"/><path d="M16 18V3M13.5 6h5M13.5 10h5" /><path d="M14 24h4" opacity=".5"/></svg><span>Raga</span></button>
+  <button data-p="mic" aria-label="Listen with microphone"><svg viewBox="0 0 32 32"><rect x="12" y="4" width="8" height="15" rx="4"/><path d="M7 15a9 9 0 0 0 18 0M16 24v4"/></svg><span>Listen</span></button>
+</nav>
+
+<div class="gate" id="gate">
+  <div class="gate-in">
+    <div class="gate-om">ॐ</div>
+    <h1>Ether</h1>
+    <p>A small world of sound.<br>Handpan, pad, djembe, raga and Om —<br>drawn as sand, grown as a golden tree.</p>
+    <button id="enter">Tap to enter</button>
+    <small>Sound on · headphones make it deeper</small>
+  </div>
+</div>
+
+<script src="ether.js"></script>
+</body>
+</html>

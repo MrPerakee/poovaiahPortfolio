@@ -1024,3 +1024,12 @@ html.view-open,html.view-open body{overflow:hidden}
 .t-farm{background:linear-gradient(125deg,#0b1007,#6E8B3D 36%,#C9A04A 64%,#0a0c05);background-size:280% 280%}
 .co-site{margin-top:0;flex-shrink:0;white-space:nowrap}
 @media(max-width:600px){.co-site{margin-top:.2rem}}
+
+/* Haren's Ether — footer mark, doorway to /ether */
+.ether-link{font-family:'Syncopate',var(--display);font-style:normal;font-weight:700;font-size:clamp(10px,.8vw,12px);
+  letter-spacing:.38em;text-transform:uppercase;text-decoration:none;
+  background:linear-gradient(100deg,var(--cream-56) 0%,var(--cream-56) 40%,var(--ember-lt) 50%,var(--cream-56) 60%,var(--cream-56) 100%);
+  background-size:300% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;color:transparent;
+  transition:letter-spacing .6s var(--ease);animation:etherShine 7s ease-in-out infinite}
+.ether-link:hover{letter-spacing:.46em}
+@keyframes etherShine{0%,70%{background-position:100% 0}100%{background-position:0 0}}
