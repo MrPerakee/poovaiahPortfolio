@@ -106,5 +106,14 @@ window.VISUAL_ASSETS = [
     "title": "Events",
     "meta": "Event coverage",
     "size": ""
+  },
+  {
+    "type": "video",
+    "title": "Anicca Villas — Nusa Penida",
+    "meta": "Property shoot · Bali",
+    "src": "visual/video/anicca-villas-nusa-penida.mp4",
+    "poster": "visual/video/thumbs/anicca-villas-nusa-penida.webp",
+    "preview": "visual/video/thumbs/anicca-villas-nusa-penida-preview.mp4",
+    "size": "tall"
   }
 ];

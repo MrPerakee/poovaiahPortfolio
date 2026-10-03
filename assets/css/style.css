@@ -1050,3 +1050,21 @@ html.view-open,html.view-open body{overflow:hidden}
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 
 .img-nela{background-image:url("../img/nela-kapi-packaging.webp");background-size:cover;background-position:center;background-repeat:no-repeat}
+
+/* Visual Direction hero — property film */
+.vh-bgvid{position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;z-index:1;
+  filter:blur(28px) brightness(.45) saturate(1.1);transform:scale(1.05)}
+.vh-reel{position:absolute;z-index:4;top:clamp(1rem,4%,2rem);bottom:clamp(1rem,4%,2rem);right:clamp(1rem,4%,3rem);
+  aspect-ratio:9/16;border-radius:clamp(.7rem,1.2vw,1.1rem);overflow:hidden;margin:0;
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.8),0 0 0 1px rgba(237,235,221,.12)}
+.vh-reel video{width:100%;height:100%;object-fit:cover;display:block}
+.vh-reel figcaption{position:absolute;left:0;right:0;bottom:0;padding:.9rem .9rem .75rem;
+  background:linear-gradient(to top,rgba(0,0,0,.7),transparent);font-size:9px;letter-spacing:.22em;
+  text-transform:uppercase;color:rgba(237,235,221,.8);font-weight:500}
+.vh-visual .vhero-c{right:calc(clamp(1rem,4%,3rem) + (62svh - 4rem) * 9 / 16 + 2rem)}
+@media(min-width:941px){.vh-visual .vh-title{grid-column:1/-1}.vh-visual .vh-side{grid-column:1/span 7;order:-1}}
+@media(max-width:940px){
+  .vh-reel{display:none}
+  .vh-visual .vhero-c{right:0}
+  .vh-bgvid{inset:0;width:100%;height:100%;filter:brightness(.55);transform:none}
+}

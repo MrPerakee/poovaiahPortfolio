@@ -244,12 +244,15 @@ function openView(k){
     if(t) setTimeout(function(){t.classList.add('pulled')},120);
   }); });
   document.title = {work:'The Work',hire:'Work With Me',visual:'Visual Direction'}[k]+' — Haren Poovaiah';
+  el.querySelectorAll('video[data-hero]').forEach(function(v){ // hero films load only when their page opens
+    if(!v.getAttribute('src')) v.src=v.getAttribute('data-src'); var p=v.play(); if(p&&p.catch) p.catch(function(){}); });
 }
 function closeViews(){
   if(!current) return;
   var el=document.getElementById('v-'+current);
   el.classList.remove('open');
   setTimeout(function(){ if(!el.classList.contains('open')) el.classList.remove('show'); },550);
+  el.querySelectorAll('video[data-hero]').forEach(function(v){v.pause()});
   current=null;
   document.documentElement.classList.remove('view-open');
   document.title='Haren Poovaiah — The Architect';

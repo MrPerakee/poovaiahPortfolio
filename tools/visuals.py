@@ -95,7 +95,7 @@ def do_video(src, kind):
     poster = ROOT / "visual" / kind / "thumbs" / (out.stem + ".webp")
     poster.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src),
-                    "-vf", "scale='min(1920,iw)':-2", "-c:v", "libx264", "-preset", "slow",
+                    "-vf", "scale='if(gte(iw,ih),min(1920,iw),-2)':'if(gte(iw,ih),-2,min(1920,ih))'", "-c:v", "libx264", "-preset", "slow",
                     "-crf", "24", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k",
                     "-movflags", "+faststart", str(out)], check=True)
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", "1", "-i", str(out),
