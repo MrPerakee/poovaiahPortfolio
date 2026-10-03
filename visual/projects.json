@@ -1,0 +1,30 @@
+[
+  {
+    "id": "guntur-gourmet",
+    "title": "Guntur Gourmet",
+    "client": "QZine Connex",
+    "discipline": "Art direction · Brand film · Packaging · Brand book",
+    "summary": "Heat as cultural identity. A complete visual world for an Andhra kitchen — food shot among clay, brass and banana leaf, a brand reel cut to the rhythm of the tadka, packaging that travels, and the SOP guidebook that keeps every plate on-brand.",
+    "cover": "visual/direction/thumbs/guntur-gourmet-the-spread.webp",
+    "accent": "#A32418"
+  },
+  {
+    "id": "anicca-villas",
+    "title": "Anicca Villas",
+    "client": "Nusa Penida, Bali",
+    "discipline": "Property film",
+    "summary": "Thatch, lime plaster and moving light. A property film paced like an arrival — letting the textures of the villa speak before any caption does.",
+    "cover": "visual/video/thumbs/anicca-villas-nusa-penida.webp",
+    "coverVideo": "visual/video/thumbs/anicca-villas-nusa-penida-preview.mp4",
+    "accent": "#8C8A6C"
+  },
+  {
+    "id": "nela-kapi",
+    "title": "Nela Kapi",
+    "client": "Nadikerianda Estate",
+    "discipline": "Label & packaging direction",
+    "summary": "Single-origin coffee from the family estate. The monsoon hills drawn in line, an earthen palette, and one promise — From the Land. For the Soul.",
+    "cover": "visual/direction/thumbs/nela-kapi-packaging.webp",
+    "accent": "#4A7A32"
+  }
+]

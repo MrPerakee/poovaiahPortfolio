@@ -11,76 +11,123 @@ function setVid(id,url){
 }
 setVid('heroVid',HERO_VIDEO); setVid('doorVid',DOOR_VIDEO);
 
-/* ═════ VISUAL DIRECTION — gallery ═════
-   The list of frames lives in assets/js/visual-assets.js (generated from visual/manifest.json).
-   Frames without a src show as styled "In curation" placeholders. */
+/* ═════ VISUAL DIRECTION — projects → frames ═════
+   Data comes from assets/js/visual-assets.js (built from visual/projects.json + visual/manifest.json).
+   #/visual            → project index (motion cards)
+   #/visual/<project>  → that project's frames; click any frame for the lightbox. */
 var VISUAL_ASSETS = window.VISUAL_ASSETS || [];
+var VISUAL_PROJECTS = window.VISUAL_PROJECTS || [];
 var KIND={photo:'Photography',video:'Videography',direction:'Direction'};
-var PAL={photo:'t-photo',video:'t-video',direction:'t-dir'};
+var KSHORT={photo:'Photo',video:'Film',direction:'Direction'};
+var ARW='<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function isVid(a){return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(a.src||'')}
-var gFilter='all', lbIdx=-1;
-(function buildGallery(){
-  var g=document.getElementById('vgrid'); if(!g) return;
-  var html='';
-  VISUAL_ASSETS.forEach(function(a,i){
-    var has=!!(a.src||a.cls), media, th=a.thumb||a.poster||a.src;
-    if(a.cls) media='<div class="vf-m '+a.cls+'"></div>';
-    else if(a.src && isVid(a)) media='<div class="vf-m">'+(a.poster?'<img src="'+esc(a.poster)+'" alt="" loading="lazy" decoding="async">':'')+
-        '<video data-src="'+esc(a.preview||a.src)+'" muted loop playsinline preload="none"></video></div>';
-    else if(a.src) media='<div class="vf-m"><img src="'+esc(th)+'" alt="'+esc(a.title)+'" loading="lazy" decoding="async"'+(a.focus?' style="object-position:'+esc(a.focus)+'"':'')+'></div>';
-    else media='<div class="vf-m gen '+PAL[a.type]+'"></div>';
-    html+='<figure class="vf st '+(a.size||'')+'" data-t="'+a.type+'" data-i="'+i+'"'+(a.src?' data-has="1"':'')+'>'+media+
-      (!has?'<span class="vf-ph">In curation</span>':'')+
-      (a.pages?'<span class="vf-pages">'+a.pages.length+' pages</span>':'')+(a.type==='video'||isVid(a)?'<span class="vf-play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></span>':'')+
-      '<figcaption class="vf-cap"><span><span class="vf-t">'+esc(a.title)+'</span><span class="vf-mt">'+esc(a.meta)+'</span></span><span class="vf-k">'+KIND[a.type]+'</span></figcaption></figure>';
+function framesOf(id){return VISUAL_ASSETS.map(function(a,i){return i}).filter(function(i){return VISUAL_ASSETS[i].project===id})}
+function typesOf(id){var t={};framesOf(id).forEach(function(i){t[VISUAL_ASSETS[i].type]=1});return Object.keys(t)}
+function shortTitle(a,p){var t=a.title||'';return p&&t.indexOf(p.title+' — ')===0?t.slice(p.title.length+3):(p&&t===p.title?KIND[a.type]:t)}
+var gProject=null, lbIdx=-1, lbPage=0;
+
+/* looping video thumbnails — play only while on screen */
+var loopIO=('IntersectionObserver' in window)?new IntersectionObserver(function(es){
+  es.forEach(function(e){var v=e.target;
+    if(e.isIntersecting){ if(!v.getAttribute('src')) v.src=v.getAttribute('data-src'); var p=v.play(); if(p&&p.catch)p.catch(function(){}); }
+    else if(!v.paused) v.pause();
   });
-  g.innerHTML=html;
-  g.setAttribute('data-stagger','');
+},{threshold:.2}):null;
+function watchLoops(root){root.querySelectorAll('video[data-loop]').forEach(function(v){ if(loopIO) loopIO.observe(v); else {v.src=v.getAttribute('data-src');v.play();} })}
+function loopVideo(src,poster){return '<video data-loop data-src="'+esc(src)+'"'+(poster?' poster="'+esc(poster)+'"':'')+' muted loop playsinline preload="none" aria-hidden="true"></video>'}
+
+/* index: one motion card per project */
+(function buildIndex(){
+  var box=document.getElementById('vprojects'); if(!box) return;
+  var html='';
+  VISUAL_PROJECTS.forEach(function(p,n){
+    var fr=framesOf(p.id); if(!fr.length) return;
+    var media=p.coverVideo?'<img src="'+esc(p.cover)+'" alt="" loading="lazy">'+loopVideo(p.coverVideo,p.cover)
+                          :'<img src="'+esc(p.cover)+'" alt="'+esc(p.title)+'" loading="lazy" decoding="async">';
+    html+='<a class="vpc st" href="#/visual/'+p.id+'" data-types="'+typesOf(p.id).join(' ')+'">'+
+      '<div class="vpc-m">'+media+'</div>'+
+      '<div class="vpc-top"><span class="vpc-n">'+String(n+1).padStart(2,'0')+'</span><span class="vpc-k">'+
+        typesOf(p.id).map(function(t){return '<span>'+KSHORT[t]+'</span>'}).join('')+'</span></div>'+
+      '<div class="vpc-b"><p class="vpc-client">'+esc(p.client)+'</p><h3 class="vpc-t">'+esc(p.title)+'</h3>'+
+      '<p class="vpc-d">'+esc(p.discipline)+' &#183; '+fr.length+(fr.length>1?' frames':' frame')+'</p>'+
+      '<span class="vpc-go">Enter project '+ARW+'</span></div></a>';
+  });
+  html+='<div class="vpc soon st" data-types="photo video direction"><span class="vf-ph">In curation</span>'+
+    '<h3 class="vpc-t">More rooms<br>being lit.</h3><p>Photography, documentary and event archives &#8212; added as they are edited.</p></div>';
+  box.innerHTML=html; box.setAttribute('data-stagger','');
+  watchLoops(box);
   document.querySelectorAll('#vfilter button').forEach(function(b){
     var f=b.getAttribute('data-f');
-    var n=f==='all'?VISUAL_ASSETS.length:VISUAL_ASSETS.filter(function(a){return a.type===f}).length;
+    var n=f==='all'?VISUAL_PROJECTS.length:VISUAL_PROJECTS.filter(function(p){return typesOf(p.id).indexOf(f)>-1}).length;
     b.innerHTML+='<sup>'+n+'</sup>';
     b.addEventListener('click',function(){
-      gFilter=f;
       document.querySelectorAll('#vfilter button').forEach(function(x){x.classList.toggle('on',x===b)});
-      g.querySelectorAll('.vf').forEach(function(el){
-        el.classList.toggle('hide', f!=='all' && el.getAttribute('data-t')!==f);
+      box.querySelectorAll('.vpc').forEach(function(el){
+        el.classList.toggle('hide', f!=='all' && (el.getAttribute('data-types')||'').split(' ').indexOf(f)<0);
       });
     });
   });
-  // videos only load when hovered
-  g.addEventListener('mouseover',function(e){
-    var f=e.target.closest('.vf'); var v=f&&f.querySelector('video'); if(!v) return;
-    if(!v.src) v.src=v.getAttribute('data-src');
-    var p=v.play(); if(p&&p.catch) p.catch(function(){});
-  });
-  g.addEventListener('mouseout',function(e){var f=e.target.closest('.vf');if(f&&!f.contains(e.relatedTarget)){var v=f.querySelector('video');if(v)v.pause()}});
-  g.addEventListener('click',function(e){
-    var f=e.target.closest('.vf'); if(!f||!f.getAttribute('data-has')) return;
-    lbOpen(+f.getAttribute('data-i'));
-  });
 })();
-function lbList(){
-  return VISUAL_ASSETS.map(function(a,i){return i}).filter(function(i){
-    var a=VISUAL_ASSETS[i]; return a.src && (gFilter==='all'||a.type===gFilter);
+
+/* project page */
+function renderProject(id){
+  var p=VISUAL_PROJECTS.filter(function(x){return x.id===id})[0];
+  var idx=document.getElementById('vIndex'), pj=document.getElementById('vProject'), hero=document.getElementById('vHero');
+  gProject=p?p.id:null;
+  if(!p){ idx.hidden=false; pj.hidden=true; hero.classList.remove('compact'); return; }
+  idx.hidden=true; pj.hidden=false; hero.classList.add('compact');
+  var fr=framesOf(p.id), pos=VISUAL_PROJECTS.indexOf(p);
+  document.getElementById('vpCount').textContent=String(pos+1).padStart(2,'0')+' / '+String(VISUAL_PROJECTS.length).padStart(2,'0');
+  document.getElementById('vpEyebrow').textContent=p.discipline;
+  var t=document.getElementById('vpTitle'); t.textContent=p.title; t.classList.remove('pulled'); splitWords(t);
+  document.getElementById('vpSum').textContent=p.summary||'';
+  document.getElementById('vpMeta').innerHTML=
+    '<div><dt>Client / Place</dt><dd>'+esc(p.client)+'</dd></div>'+
+    '<div><dt>Discipline</dt><dd>'+esc(p.discipline)+'</dd></div>'+
+    '<div><dt>Frames</dt><dd>'+fr.length+'</dd></div>';
+  var g=document.getElementById('vgrid'), html='';
+  fr.forEach(function(i){
+    var a=VISUAL_ASSETS[i], media, th=a.thumb||a.poster||a.src;
+    if(isVid(a)) media='<div class="vf-m"><img src="'+esc(a.poster||'')+'" alt="" loading="lazy">'+loopVideo(a.preview||a.src,a.poster)+'</div>';
+    else media='<div class="vf-m"><img src="'+esc(th)+'" alt="'+esc(a.title)+'" loading="lazy" decoding="async"'+(a.focus?' style="object-position:'+esc(a.focus)+'"':'')+'></div>';
+    html+='<figure class="vf st '+(a.size||'')+'" data-i="'+i+'" data-has="1">'+media+
+      (a.pages?'<span class="vf-pages">'+a.pages.length+' pages</span>':'')+
+      (isVid(a)?'<span class="vf-play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></span>':'')+
+      '<figcaption class="vf-cap"><span><span class="vf-t">'+esc(shortTitle(a,p))+'</span><span class="vf-mt">'+esc(a.meta)+'</span></span><span class="vf-k">'+KIND[a.type]+'</span></figcaption></figure>';
   });
+  g.innerHTML=html; watchLoops(g);
+  g.classList.toggle('one',fr.length===1); g.classList.toggle('few',fr.length===2);
+  var nx=VISUAL_PROJECTS[(pos+1)%VISUAL_PROJECTS.length];
+  document.getElementById('vpNext').href='#/visual/'+nx.id;
+  document.getElementById('vpNext').innerHTML='<span class="nx-img"><img src="'+esc(nx.cover)+'" alt="" loading="lazy"></span>'+
+    '<span><small>Next project</small><b>'+esc(nx.title)+'</b></span>'+ARW;
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    t.classList.add('pulled');
+    g.querySelectorAll('.st').forEach(function(c,k){c.style.transitionDelay=(k*0.08)+'s';c.classList.add('in');
+      setTimeout(function(){c.style.transitionDelay=''},(k*0.08+0.8)*1000);});
+  }); });
 }
-var lbPage=0;
+document.getElementById('vgrid').addEventListener('click',function(e){
+  var f=e.target.closest('.vf'); if(f) lbOpen(+f.getAttribute('data-i'));
+});
+
+/* lightbox — scoped to the open project; multi-page items turn pages first */
+function lbList(){ return gProject?framesOf(gProject):VISUAL_ASSETS.map(function(a,i){return i}); }
 function lbOpen(i,page){
   var a=VISUAL_ASSETS[i]; if(!a||!a.src) return; lbIdx=i;
   var n=a.pages?a.pages.length:0; lbPage=n?Math.max(0,Math.min(n-1,page||0)):0;
   var src=n?a.pages[lbPage]:a.src, m=document.getElementById('lbm');
   m.innerHTML = isVid(a) ? '<video src="'+esc(a.src)+'"'+(a.poster?' poster="'+esc(a.poster)+'"':'')+' controls autoplay playsinline></video>'
                          : '<img src="'+esc(src)+'" alt="'+esc(a.title)+'">';
-  document.getElementById('lbc').innerHTML=esc(a.title)+'<span>'+esc(a.meta)+(n?' \u00b7 Page '+(lbPage+1)+' / '+n:'')+'</span>';
+  document.getElementById('lbc').innerHTML=esc(a.title)+'<span>'+esc(a.meta)+(n?' · Page '+(lbPage+1)+' / '+n:'')+'</span>';
   if(n&&lbPage<n-1){var pre=new Image();pre.src=a.pages[lbPage+1];}
   var l=document.getElementById('lb'); l.classList.add('open');
   l.classList.toggle('multi', lbList().length>1||n>1);
 }
 function lbStep(d){
   var a=VISUAL_ASSETS[lbIdx], n=a&&a.pages?a.pages.length:0;
-  if(n&&lbPage+d>=0&&lbPage+d<n){ lbOpen(lbIdx,lbPage+d); return; } // turn the page first
+  if(n&&lbPage+d>=0&&lbPage+d<n){ lbOpen(lbIdx,lbPage+d); return; }
   var L=lbList(); if(L.length<2) return;
   var k=L.indexOf(lbIdx), j=L[(k+d+L.length)%L.length], b=VISUAL_ASSETS[j];
   lbOpen(j, d<0&&b.pages?b.pages.length-1:0);
@@ -228,14 +275,15 @@ function mobT(open){
 
 /* ═════ ROUTER — three doors → sub-pages (#/work · #/hire · #/visual) ═════ */
 var current=null;
-function viewKey(){ var m=location.hash.match(/^#\/(work|hire|visual)\b/); return m?m[1]:null; }
-function openView(k){
+function viewKey(){ var m=location.hash.match(/^#\/(work|hire|visual)(?:\/([\w-]+))?/); return m?{k:m[1],sub:m[2]||null}:null; }
+function openView(k,sub){
   var el=document.getElementById('v-'+k); if(!el) return;
   if(current && current!==k){ var old=document.getElementById('v-'+current); old.classList.remove('open','show'); }
   var fresh = current!==k;
   current=k;
   document.documentElement.classList.add('view-open');
   el.classList.add('show');
+  if(k==='visual'){ var moved=gProject!==(sub||null); renderProject(sub); if(moved&&!fresh) el.scrollTop=0; }
   if(fresh){ el.scrollTop=0; }
   var t=el.querySelector('[data-vpu]');
   if(t&&fresh){ t.classList.remove('pulled'); }
@@ -244,25 +292,24 @@ function openView(k){
     if(t) setTimeout(function(){t.classList.add('pulled')},120);
   }); });
   document.title = {work:'The Work',hire:'Work With Me',visual:'Visual Direction'}[k]+' — Haren Poovaiah';
-  el.querySelectorAll('video[data-hero]').forEach(function(v){ // hero films load only when their page opens
-    if(!v.getAttribute('src')) v.src=v.getAttribute('data-src'); var p=v.play(); if(p&&p.catch) p.catch(function(){}); });
 }
 function closeViews(){
   if(!current) return;
   var el=document.getElementById('v-'+current);
   el.classList.remove('open');
   setTimeout(function(){ if(!el.classList.contains('open')) el.classList.remove('show'); },550);
-  el.querySelectorAll('video[data-hero]').forEach(function(v){v.pause()});
+  el.querySelectorAll('video').forEach(function(v){v.pause()});
   current=null;
   document.documentElement.classList.remove('view-open');
   document.title='Haren Poovaiah — The Architect';
 }
-function route(){ var k=viewKey(); if(k) openView(k); else closeViews(); }
+function route(){ var r=viewKey(); if(r) openView(r.k,r.sub); else closeViews(); }
 addEventListener('hashchange',route);
 route();
 addEventListener('keydown',function(e){
   if(e.key!=='Escape') return;
   if(lbIdx>=0){ lbClose(); return; }
+  if(current==='visual'&&gProject){ location.hash='#/visual'; return; }
   if(current){ goLanding('#paths'); }
 });
 function goLanding(sel){

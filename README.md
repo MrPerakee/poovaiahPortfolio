@@ -19,8 +19,8 @@ netlify.toml                Netlify config (caching/headers)
 
 ```bash
 pip install pillow            # once; ffmpeg also needed for video (brew install ffmpeg)
-python3 tools/visuals.py add ~/Desktop/food-shoot   --type photo --meta "Food · Photography"
-python3 tools/visuals.py add ~/Desktop/brand-film.mov --type video --title "Guntur Gourmet — Brand Film"
+python3 tools/visuals.py add ~/Desktop/food-shoot --project guntur-gourmet --type photo --meta "Food · Photography"
+python3 tools/visuals.py add ~/Desktop/brand-film.mov --project guntur-gourmet --type video --title "Guntur Gourmet — Brand Film"
 python3 tools/visuals.py list
 ```
 
@@ -28,7 +28,8 @@ Photos → WebP, 2400px full + 900px thumb, location data stripped.
 Videos → H.264 MP4 (≤1080p, streams immediately) + poster frame.
 Tall/wide grid tiles are picked from each file's shape (override with `--size`).
 Edit titles/order in `visual/manifest.json` (optional `"focus": "center 70%"` sets the crop), then `python3 tools/visuals.py build`.
-"In curation" placeholders in a category step aside once it has 3 real frames.
+Projects (title, client, discipline, summary, cover) live in `visual/projects.json`; every frame names its `project`.
+The Visual page shows one motion card per project; each opens at `#/visual/<project-id>`. Video tiles loop their preview clip while on screen.
 
 Keep each video under ~95 MB (GitHub's per-file limit is 100 MB).
 

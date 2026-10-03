@@ -1,5 +1,6 @@
 [
   {
+    "project": "guntur-gourmet",
     "type": "direction",
     "title": "Guntur Gourmet — The Spread",
     "meta": "Art direction · Food shoot",
@@ -8,6 +9,7 @@
     "size": "wide"
   },
   {
+    "project": "guntur-gourmet",
     "type": "video",
     "title": "Guntur Gourmet — Brand Reel",
     "meta": "Brand film · 22s",
@@ -17,6 +19,7 @@
     "preview": "visual/video/thumbs/guntur-gourmet-brand-reel-preview.mp4"
   },
   {
+    "project": "guntur-gourmet",
     "type": "direction",
     "title": "Guntur Gourmet — Served by Hand",
     "meta": "Art direction · Food shoot",
@@ -25,6 +28,7 @@
     "size": "tall"
   },
   {
+    "project": "guntur-gourmet",
     "type": "direction",
     "title": "Guntur Gourmet — Packaging",
     "meta": "Packaging direction · Real-world packaging",
@@ -33,6 +37,7 @@
     "size": "tall"
   },
   {
+    "project": "guntur-gourmet",
     "type": "direction",
     "title": "Guntur Gourmet — SOP Guidebook",
     "meta": "Brand book · Kitchen operations",
@@ -48,6 +53,17 @@
     "size": "tall"
   },
   {
+    "project": "anicca-villas",
+    "type": "video",
+    "title": "Anicca Villas — Nusa Penida",
+    "meta": "Property shoot · Bali",
+    "src": "visual/video/anicca-villas-nusa-penida.mp4",
+    "poster": "visual/video/thumbs/anicca-villas-nusa-penida.webp",
+    "preview": "visual/video/thumbs/anicca-villas-nusa-penida-preview.mp4",
+    "size": "tall"
+  },
+  {
+    "project": "nela-kapi",
     "type": "direction",
     "title": "Nela Kapi — Packaging",
     "meta": "Packaging system · Tin & pouch",
@@ -57,68 +73,12 @@
     "focus": "center 72%"
   },
   {
+    "project": "nela-kapi",
     "type": "direction",
     "title": "Nela Kapi — Rain Brew Label",
     "meta": "Label design · Single origin",
     "src": "visual/direction/nela-kapi-rain-brew-label.webp",
     "thumb": "visual/direction/thumbs/nela-kapi-rain-brew-label.webp",
     "size": ""
-  },
-  {
-    "type": "photo",
-    "title": "Food",
-    "meta": "Photography series",
-    "size": "wide"
-  },
-  {
-    "type": "photo",
-    "title": "Culture",
-    "meta": "Photography series",
-    "size": ""
-  },
-  {
-    "type": "video",
-    "title": "Brand Films",
-    "meta": "Videography",
-    "size": ""
-  },
-  {
-    "type": "photo",
-    "title": "Portraiture",
-    "meta": "Photography series",
-    "size": "tall"
-  },
-  {
-    "type": "photo",
-    "title": "Architecture",
-    "meta": "Photography series",
-    "size": ""
-  },
-  {
-    "type": "video",
-    "title": "Documentary",
-    "meta": "Observational filmmaking",
-    "size": "wide"
-  },
-  {
-    "type": "video",
-    "title": "Events",
-    "meta": "Event coverage",
-    "size": ""
-  },
-  {
-    "type": "direction",
-    "title": "Shoot Direction",
-    "meta": "Art direction · Styling",
-    "size": ""
-  },
-  {
-    "type": "video",
-    "title": "Anicca Villas — Nusa Penida",
-    "meta": "Property shoot · Bali",
-    "src": "visual/video/anicca-villas-nusa-penida.mp4",
-    "poster": "visual/video/thumbs/anicca-villas-nusa-penida.webp",
-    "preview": "visual/video/thumbs/anicca-villas-nusa-penida-preview.mp4",
-    "size": "tall"
   }
 ]
