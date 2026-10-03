@@ -49,6 +49,23 @@ window.VISUAL_ASSETS = [
     "size": "tall"
   },
   {
+    "type": "direction",
+    "title": "Nela Kapi — Packaging",
+    "meta": "Packaging system · Tin & pouch",
+    "src": "visual/direction/nela-kapi-packaging.webp",
+    "thumb": "visual/direction/thumbs/nela-kapi-packaging.webp",
+    "size": "wide",
+    "focus": "center 72%"
+  },
+  {
+    "type": "direction",
+    "title": "Nela Kapi — Rain Brew Label",
+    "meta": "Label design · Single origin",
+    "src": "visual/direction/nela-kapi-rain-brew-label.webp",
+    "thumb": "visual/direction/thumbs/nela-kapi-rain-brew-label.webp",
+    "size": ""
+  },
+  {
     "type": "photo",
     "title": "Food",
     "meta": "Photography series",

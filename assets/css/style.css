@@ -1048,3 +1048,5 @@ html.view-open,html.view-open body{overflow:hidden}
   font-size:9px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;color:#EDEBDD;
   padding:.3rem .6rem;border-radius:999px;background:rgba(0,0,0,.4);border:1px solid rgba(237,235,221,.25);
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+
+.img-nela{background-image:url("../img/nela-kapi-packaging.webp");background-size:cover;background-position:center;background-repeat:no-repeat}

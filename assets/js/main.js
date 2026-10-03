@@ -28,7 +28,7 @@ var gFilter='all', lbIdx=-1;
     if(a.cls) media='<div class="vf-m '+a.cls+'"></div>';
     else if(a.src && isVid(a)) media='<div class="vf-m">'+(a.poster?'<img src="'+esc(a.poster)+'" alt="" loading="lazy" decoding="async">':'')+
         '<video data-src="'+esc(a.preview||a.src)+'" muted loop playsinline preload="none"></video></div>';
-    else if(a.src) media='<div class="vf-m"><img src="'+esc(th)+'" alt="'+esc(a.title)+'" loading="lazy" decoding="async"></div>';
+    else if(a.src) media='<div class="vf-m"><img src="'+esc(th)+'" alt="'+esc(a.title)+'" loading="lazy" decoding="async"'+(a.focus?' style="object-position:'+esc(a.focus)+'"':'')+'></div>';
     else media='<div class="vf-m gen '+PAL[a.type]+'"></div>';
     html+='<figure class="vf st '+(a.size||'')+'" data-t="'+a.type+'" data-i="'+i+'"'+(a.src?' data-has="1"':'')+'>'+media+
       (!has?'<span class="vf-ph">In curation</span>':'')+

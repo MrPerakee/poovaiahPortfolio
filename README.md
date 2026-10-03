@@ -27,7 +27,7 @@ python3 tools/visuals.py list
 Photos → WebP, 2400px full + 900px thumb, location data stripped.
 Videos → H.264 MP4 (≤1080p, streams immediately) + poster frame.
 Tall/wide grid tiles are picked from each file's shape (override with `--size`).
-Edit titles/order in `visual/manifest.json`, then `python3 tools/visuals.py build`.
+Edit titles/order in `visual/manifest.json` (optional `"focus": "center 70%"` sets the crop), then `python3 tools/visuals.py build`.
 "In curation" placeholders in a category step aside once it has 3 real frames.
 
 Keep each video under ~95 MB (GitHub's per-file limit is 100 MB).
