@@ -1033,3 +1033,13 @@ html.view-open,html.view-open body{overflow:hidden}
   transition:letter-spacing .6s var(--ease);animation:etherShine 7s ease-in-out infinite}
 .ether-link:hover{letter-spacing:.46em}
 @keyframes etherShine{0%,70%{background-position:100% 0}100%{background-position:0 0}}
+
+/* Shanqualia */
+.t-anik{background:linear-gradient(125deg,#06100f,#2E8C8A 38%,#B8D4C8 60%,#050b0b);background-size:280% 280%}
+.t-grillz{background:linear-gradient(125deg,#0d0d10,#9AA3AD 36%,#D4AF37 62%,#0a0a0c);background-size:280% 280%}
+.co-note{padding:0 clamp(1.3rem,3vw,2.4rem) clamp(1rem,2vw,1.5rem);font-size:var(--t-small);line-height:1.6;
+  color:var(--cream-72);max-width:70ch;font-weight:300}
+.acc.sub .acc-trigger{padding-left:calc(clamp(1.3rem,3vw,2.4rem) + clamp(1.2rem,3vw,2.6rem))}
+.acc.sub .tile{width:clamp(48px,6vw,118px)}
+@media(min-width:1280px){.acc.sub .tile{width:clamp(96px,7vw,128px)}}
+@media(max-width:600px){.acc.sub .acc-trigger{padding-left:2rem}.acc.sub .tile{width:50px}}
