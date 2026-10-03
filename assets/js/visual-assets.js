@@ -34,6 +34,21 @@ window.VISUAL_ASSETS = [
     "size": "tall"
   },
   {
+    "type": "direction",
+    "title": "Guntur Gourmet — SOP Guidebook",
+    "meta": "Brand book · Kitchen operations",
+    "src": "visual/direction/gg-sop-guidebook/page-1.webp",
+    "thumb": "visual/direction/gg-sop-guidebook/cover-thumb.webp",
+    "pages": [
+      "visual/direction/gg-sop-guidebook/page-1.webp",
+      "visual/direction/gg-sop-guidebook/page-2.webp",
+      "visual/direction/gg-sop-guidebook/page-3.webp",
+      "visual/direction/gg-sop-guidebook/page-4.webp",
+      "visual/direction/gg-sop-guidebook/page-5.webp"
+    ],
+    "size": "tall"
+  },
+  {
     "type": "photo",
     "title": "Food",
     "meta": "Photography series",

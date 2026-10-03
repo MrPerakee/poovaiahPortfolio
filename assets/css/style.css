@@ -1043,3 +1043,8 @@ html.view-open,html.view-open body{overflow:hidden}
 .acc.sub .tile{width:clamp(48px,6vw,118px)}
 @media(min-width:1280px){.acc.sub .tile{width:clamp(96px,7vw,128px)}}
 @media(max-width:600px){.acc.sub .acc-trigger{padding-left:2rem}.acc.sub .tile{width:50px}}
+
+.vf-pages{position:absolute;top:clamp(.8rem,1.4vw,1.2rem);right:clamp(.8rem,1.4vw,1.2rem);z-index:2;
+  font-size:9px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;color:#EDEBDD;
+  padding:.3rem .6rem;border-radius:999px;background:rgba(0,0,0,.4);border:1px solid rgba(237,235,221,.25);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
