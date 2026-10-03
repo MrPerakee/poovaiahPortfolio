@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════
    ETHER — a small world of sound
-   Handpan · Synth pad · Djembe · Om · Raga/Tanpura · Listen (mic)
+   Handpan · Synth pad · Djembe · Om · Raga/Tanpura · Loop & record
    Visuals: Flower of Life · golden-ratio tree · Chladni cymatics
    Everything is synthesised live with the Web Audio API — no samples.
    ═══════════════════════════════════════════ */
@@ -56,7 +56,7 @@ var NOTE=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 function westOf(f){var m=Math.round(69+12*Math.log2(f/440));return NOTE[((m%12)+12)%12]+(Math.floor(m/12)-1)}
 
 /* ─────────── AUDIO GRAPH ─────────── */
-var ac,bus,master,an,anBuf,verb;
+var ac,bus,master,an,anBuf,verb,instOut,loopBus,tapInst,tapMix;
 function impulse(sec,decay){
   var r=ac.sampleRate,len=r*sec,b=ac.createBuffer(2,len,r);
   for(var c=0;c<2;c++){var d=b.getChannelData(c);for(var i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);}
@@ -71,9 +71,12 @@ function initAudio(){
   var comp=ac.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4; comp.attack.value=.005; comp.release.value=.2;
   verb=ac.createConvolver(); verb.buffer=impulse(3.4,2.4);
   var wet=ac.createGain(); wet.gain.value=.32;
-  bus.connect(master); bus.connect(verb); verb.connect(wet); wet.connect(master);
+  instOut=ac.createGain(); loopBus=ac.createGain();            // instruments (+their reverb) · loop playback
+  bus.connect(instOut); bus.connect(verb); verb.connect(wet); wet.connect(instOut);
+  instOut.connect(master); loopBus.connect(master);
   an=ac.createAnalyser(); an.fftSize=1024; anBuf=new Float32Array(an.fftSize);
   master.connect(comp); comp.connect(an); an.connect(ac.destination);
+  tapInst=makeTap(instOut); tapMix=makeTap(comp);              // looper hears only what you play; session hears everything
 }
 function now(){return ac.currentTime}
 var noiseBuf;
@@ -291,9 +294,8 @@ function frame(ts){
   view.h+=(view.hT-view.h)*.12; view.cy+=(view.cyT-view.cy)*.12;
   if(an){an.getFloatTimeDomainData(anBuf);var s=0;for(var i=0;i<anBuf.length;i+=4)s+=anBuf[i]*anBuf[i];
     energy+=(Math.min(1,Math.sqrt(s/(anBuf.length/4))*4)-energy)*.2;}
-  if(mic.on) micTick();
   cym.amp*=.985;
-  if(om.on){ if(!mic.on&&cym.amp<.4) cym.f=om.f; cym.amp=Math.max(cym.amp,.35); }
+  if(om.on){ if(cym.amp<.4) cym.f=om.f; cym.amp=Math.max(cym.amp,.35); }
   cx.fillStyle='rgba(0,0,0,.34)'; cx.fillRect(0,0,W,H); // soft trails
   var R=Math.max(60,Math.min(W*.4,view.h*.42));
   if(vis.flower) drawFlower(t,R);
@@ -305,36 +307,125 @@ function frame(ts){
   requestAnimationFrame(frame);
 }
 
-/* ─────────── MIC (listen) ─────────── */
-var mic={on:false,stream:null,an:null,buf:null,lvl:0};
-function micToggle(){
-  if(mic.on){mic.on=false;mic.stream.getTracks().forEach(function(t){t.stop()});mic.stream=null;
-    $('#micBtn').classList.remove('on');$('#micBtn span').textContent='Start listening';liveDots();return;}
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){$('#micNote').textContent='Microphone not available here (needs https).';return;}
-  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(st){
-    mic.stream=st; var src=ac.createMediaStreamSource(st); mic.an=ac.createAnalyser(); mic.an.fftSize=2048;
-    mic.buf=new Float32Array(mic.an.fftSize); src.connect(mic.an); mic.on=true;
-    $('#micBtn').classList.add('on');$('#micBtn span').textContent='Listening';liveDots();
-  }).catch(function(){$('#micNote').textContent='Microphone permission was declined.';});
+/* ─────────── LOOP & RECORD ───────────
+   Session: records everything you hear, then saves it to the phone as a WAV.
+   Looper: the first layer sets the loop length; every next layer is one loop long and lines up with it.
+   Files are named "Haren's Ether vibration …". */
+var TAPSIZE=2048;
+function makeTap(node){
+  var t={on:false,L:[],R:[],t0:0,n:0}, sp=ac.createScriptProcessor(TAPSIZE,2,2), sink=ac.createGain(); sink.gain.value=0;
+  sp.onaudioprocess=function(e){
+    if(!t.on) return;
+    var ib=e.inputBuffer, l=ib.getChannelData(0), r=ib.numberOfChannels>1?ib.getChannelData(1):l;
+    if(!t.n) t.t0=e.playbackTime-TAPSIZE/ac.sampleRate; // input block was rendered one block before it plays
+    t.L.push(new Float32Array(l)); t.R.push(new Float32Array(r)); t.n+=l.length;
+    if(t.onblock) t.onblock();
+  };
+  node.connect(sp); sp.connect(sink); sink.connect(ac.destination); return t;
 }
-function pitch(buf,sr){ // autocorrelation with parabolic interpolation
-  var n=buf.length,rms=0,i;for(i=0;i<n;i++)rms+=buf[i]*buf[i];rms=Math.sqrt(rms/n);
-  if(rms<.008) return {f:0,rms:rms};
-  var minL=Math.floor(sr/1500),maxL=Math.floor(sr/55),best=-1,bv=0,c=new Float32Array(maxL+2);
-  for(var l=minL;l<=maxL+1;l++){var s=0;for(i=0;i<n-l;i++)s+=buf[i]*buf[i+l];c[l]=s;}
-  for(l=minL+1;l<=maxL;l++){if(c[l]>c[l-1]&&c[l]>=c[l+1]&&c[l]>bv){bv=c[l];best=l;}}
-  if(best<0||bv<c[0]*0.3) return {f:0,rms:rms}; // weak periodicity → noise, ignore
-  var a=c[best-1],b=c[best],d=c[best+1],sh=(a-d)/(2*(a-2*b+d))||0;
-  return {f:sr/(best+sh),rms:rms};
+function tapStart(t){t.L=[];t.R=[];t.n=0;t.on=true;}
+function tapStop(t){t.on=false;var L=new Float32Array(t.n),R=new Float32Array(t.n),o=0;
+  for(var i=0;i<t.L.length;i++){L.set(t.L[i],o);R.set(t.R[i],o);o+=t.L[i].length;} t.L=[];t.R=[];return {L:L,R:R,t0:t.t0};}
+
+function wav(L,R,sr){ // 16-bit stereo PCM — plays everywhere, saves to Files/Downloads
+  var n=L.length, buf=new ArrayBuffer(44+n*4), v=new DataView(buf), p=0;
+  function s(x){for(var i=0;i<x.length;i++)v.setUint8(p++,x.charCodeAt(i))} function u32(x){v.setUint32(p,x,true);p+=4} function u16(x){v.setUint16(p,x,true);p+=2}
+  s('RIFF');u32(36+n*4);s('WAVE');s('fmt ');u32(16);u16(1);u16(2);u32(sr);u32(sr*4);u16(4);u16(16);s('data');u32(n*4);
+  var peak=0;for(var i=0;i<n;i++)peak=Math.max(peak,Math.abs(L[i]),Math.abs(R[i]));
+  var g=peak>0?Math.min(4,.89/peak):1; // gentle normalise so quiet takes are audible on a phone
+  for(i=0;i<n;i++){v.setInt16(p,Math.max(-1,Math.min(1,L[i]*g))*32767,true);p+=2;v.setInt16(p,Math.max(-1,Math.min(1,R[i]*g))*32767,true);p+=2;}
+  return new Blob([buf],{type:'audio/wav'});
 }
-var micFrame=0;
-function micTick(){
-  if(++micFrame%2) return; mic.an.getFloatTimeDomainData(mic.buf);
-  var r=pitch(mic.buf,ac.sampleRate); mic.lvl+=(Math.min(1,r.rms*8)-mic.lvl)*.4;
-  $('#micLvl').style.width=(mic.lvl*100).toFixed(0)+'%';
-  if(r.f>50&&r.f<1600){cym.f=r.f;cym.amp=Math.max(cym.amp,Math.min(1,r.rms*10));
-    var sw=swaraOf(r.f); $('#micHz').textContent=r.f.toFixed(1)+' Hz';
-    $('#micNote').textContent=westOf(r.f)+' · '+sw.name+(sw.cents?' '+(sw.cents>0?'+':'')+sw.cents+'¢':'')+' from Sa';}
+var saveCount=+(store('saves')||0);
+function saveFile(blob,kind){
+  saveCount++; store('saves',saveCount);
+  var d=new Date(), pad=function(x){return String(x).padStart(2,'0')};
+  var name="Haren's Ether vibration "+pad(saveCount)+' — '+d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+pad(d.getMinutes())+'.wav';
+  var url=URL.createObjectURL(blob), a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url)},60000);
+  var row=document.createElement('div'); row.className='saved';
+  row.innerHTML='<span>'+name.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span><small>'+kind+' · '+(blob.size/1e6).toFixed(1)+' MB</small>';
+  var sv=$('#saves'); sv.insertBefore(row,sv.firstChild); toast('Saved · '+name);
+}
+var toastT;
+function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},2800);}
+function fmt(s){s=Math.max(0,s);return Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0')}
+
+/* session recording */
+var sess={on:false,timer:null,max:600};
+function sessToggle(){
+  ensure();
+  if(!sess.on){ tapStart(tapMix); sess.on=true; $('#recBtn').classList.add('on'); $('#recLbl').textContent='Stop & save';
+    var st=performance.now(); sess.timer=setInterval(function(){var s=(performance.now()-st)/1000;$('#recTime').textContent=fmt(s);if(s>sess.max)sessToggle();},250);
+  }else{ clearInterval(sess.timer); sess.on=false; $('#recBtn').classList.remove('on'); $('#recLbl').textContent='Record';
+    var r=tapStop(tapMix); $('#recTime').textContent='0:00';
+    if(r.L.length<ac.sampleRate*.5){toast('Too short to save — play a little longer');}
+    else saveFile(wav(r.L,r.R,ac.sampleRate),'Session');
+  }
+  liveDots();
+}
+
+/* looper */
+var loop={len:0,start:0,layers:[],rec:false,stopT:null,raf:0};
+function loopRec(){
+  ensure();
+  if(loop.rec){ loopStopRec(); return; }
+  if(loop.layers.length>=6){toast('Six layers is the limit — clear or undo one');return;}
+  loop.rec=true; tapStart(tapInst); $('#layBtn').classList.add('on');
+  $('#layLbl').textContent=loop.layers.length?'Recording layer '+(loop.layers.length+1)+'…':'Recording — tap to close the loop';
+  if(loop.len){ // overdub: exactly one loop long
+    loop.stopT=setTimeout(loopStopRec,loop.len*1000+TAPSIZE/ac.sampleRate*1000*2+60);
+  }else loop.stopT=setTimeout(loopStopRec,30000);
+  liveDots();
+}
+function loopStopRec(){
+  if(!loop.rec) return; clearTimeout(loop.stopT); loop.rec=false; $('#layBtn').classList.remove('on');
+  var r=tapStop(tapInst), sr=ac.sampleRate;
+  if(!loop.len){
+    if(r.L.length<sr*.6){toast('Loop too short — hold it a little longer');$('#layLbl').textContent='Record first layer';liveDots();return;}
+    loop.len=r.L.length/sr; loop.start=r.t0;
+    addLayer(r.L,r.R);
+  }else{
+    var N=Math.round(loop.len*sr), L=new Float32Array(N), R=new Float32Array(N);
+    var off=Math.round((((r.t0-loop.start)%loop.len)+loop.len)%loop.len*sr), m=Math.min(N,r.L.length);
+    for(var k=0;k<m;k++){var j=(off+k)%N;L[j]=r.L[k];R[j]=r.R[k];}
+    addLayer(L,R);
+  }
+  $('#layLbl').textContent='Add a layer'; liveDots();
+}
+function addLayer(L,R){
+  var sr=ac.sampleRate, N=L.length, b=ac.createBuffer(2,N,sr), f=Math.min(256,N>>3);
+  for(var i=0;i<f;i++){var g=i/f;L[i]*=g;R[i]*=g;L[N-1-i]*=g;R[N-1-i]*=g;} // soft seams
+  b.copyToChannel(L,0); b.copyToChannel(R,1);
+  var g=ac.createGain(), s=ac.createBufferSource(); s.buffer=b; s.loop=true; s.connect(g); g.connect(loopBus);
+  var t=ac.currentTime+.02; s.start(t, ((t-loop.start)%loop.len+loop.len)%loop.len);
+  loop.layers.push({src:s,gain:g,L:L,R:R,muted:false}); drawLayers();
+}
+function drawLayers(){
+  var box=$('#loopLayers'); box.innerHTML='';
+  loop.layers.forEach(function(ly,i){var b=document.createElement('button');b.className='lay'+(ly.muted?' muted':'');
+    b.innerHTML='<i></i>Layer '+(i+1);b.onclick=function(){ly.muted=!ly.muted;ly.gain.gain.setTargetAtTime(ly.muted?0:1,ac.currentTime,.02);b.classList.toggle('muted',ly.muted);};
+    box.appendChild(b);});
+  $('#loopLen').textContent=loop.len?loop.len.toFixed(1)+' s loop':'';
+  $('#undoBtn').disabled=$('#clearBtn').disabled=$('#saveLoopBtn').disabled=!loop.layers.length;
+  if(loop.layers.length&&!loop.raf) loopTick();
+}
+function loopTick(){ // playhead ring
+  if(!loop.layers.length){loop.raf=0;$('#loopRing').style.setProperty('--p',0);return;}
+  var p=((ac.currentTime-loop.start)%loop.len+loop.len)%loop.len/loop.len;
+  $('#loopRing').style.setProperty('--p',p); if(p<.04){cym.amp=Math.max(cym.amp,.5);}
+  loop.raf=requestAnimationFrame(loopTick);
+}
+function loopUndo(){var ly=loop.layers.pop();if(ly){ly.src.stop();ly.gain.disconnect();}if(!loop.layers.length)loop.len=0;drawLayers();$('#layLbl').textContent=loop.len?'Add a layer':'Record first layer';}
+function loopClear(){while(loop.layers.length)loopUndo();}
+function loopSave(){
+  if(!loop.layers.length) return;
+  var sr=ac.sampleRate, N=loop.layers[0].L.length, reps=Math.max(2,Math.min(8,Math.ceil(24/loop.len))), T=N*reps;
+  var L=new Float32Array(T),R=new Float32Array(T);
+  loop.layers.forEach(function(ly){ if(ly.muted) return;
+    for(var r=0;r<reps;r++){var o=r*N;for(var i=0;i<N;i++){L[o+i]+=ly.L[i];R[o+i]+=ly.R[i];}} });
+  var fo=Math.min(T,Math.round(sr*1.2)); for(var i=0;i<fo;i++){var g=i/fo;L[T-1-i]*=g;R[T-1-i]*=g;} // fade out
+  saveFile(wav(L,R,sr),'Loop × '+reps);
 }
 
 /* ─────────── UI BUILDERS ─────────── */
@@ -422,7 +513,7 @@ function openPanel(p){
 function liveDots(){
   $('.dock [data-p=om]').classList.toggle('live',om.on);
   $('.dock [data-p=raga]').classList.toggle('live',tan.on);
-  $('.dock [data-p=mic]').classList.toggle('live',mic.on);
+  $('.dock [data-p=loop]').classList.toggle('live',sess.on||loop.rec||loop.layers.length>0);
 }
 $$('.dock button').forEach(function(b){b.addEventListener('click',function(){ensure();openPanel(b.getAttribute('data-p'))})});
 $$('#layers button').forEach(function(b){b.addEventListener('click',function(){var l=b.getAttribute('data-l');vis[l]=!vis[l];b.classList.toggle('on',vis[l]);})});
@@ -442,7 +533,45 @@ $('#aroBtn').addEventListener('click',function(){ensure();
   seq.forEach(function(nt,i){setTimeout(function(){handpan(nt.f,.8);var bs=$$('#swaras button'),k=i<up.length?i:seq.length-1-i;if(bs[k])hit(bs[k]);},i*360)});
 });
 $('#saFine').addEventListener('input',function(e){S.saCents=+e.target.value;store('cents',S.saCents);$('#saHz').textContent=Sa().toFixed(1);buildHandpan();buildPad();buildRaga();});
-$('#micBtn').addEventListener('click',function(){ensure();micToggle();});
+$('#recBtn').addEventListener('click',sessToggle);
+$('#layBtn').addEventListener('click',loopRec);
+$('#undoBtn').addEventListener('click',loopUndo);
+$('#clearBtn').addEventListener('click',loopClear);
+$('#saveLoopBtn').addEventListener('click',loopSave);
+
+/* full-screen for every instrument */
+var FS='<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>', FSX='<svg viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+$$('.panel .ph').forEach(function(ph){var b=document.createElement('button');b.className='fs';b.setAttribute('aria-label','Full screen');b.innerHTML=FS;
+  b.addEventListener('click',fsToggle);ph.appendChild(b);});
+function fsToggle(){
+  var on=!document.body.classList.contains('full'); document.body.classList.toggle('full',on);
+  $$('.panel .fs').forEach(function(b){b.innerHTML=on?FSX:FS;b.setAttribute('aria-label',on?'Exit full screen':'Full screen')});
+  var de=document.documentElement;
+  try{ if(on&&de.requestFullscreen&&!document.fullscreenElement) de.requestFullscreen().catch(function(){});
+       if(!on&&document.fullscreenElement) document.exitFullscreen().catch(function(){}); }catch(e){}
+  setTimeout(function(){sizeInst();layoutView();},60); setTimeout(function(){sizeInst();layoutView();},560);
+}
+document.addEventListener('fullscreenchange',function(){ if(!document.fullscreenElement&&document.body.classList.contains('full')) fsToggle(); });
+
+/* opening — sand settling into patterns */
+(function gateCym(){
+  var c=$('#gateCym'); if(!c) return; var g=c.getContext('2d'), d=Math.min(window.devicePixelRatio||1,2), S=c.clientWidth||200;
+  c.width=c.height=S*d; g.setTransform(d,0,0,d,0,0);
+  var P=[],M=[[3,1],[5,2],[4,1],[7,2],[6,1],[8,3],[5,4],[9,4]],k=0,last=0,amp=1;
+  for(var i=0;i<1500;i++)P.push(rp());
+  function tick(ts){
+    if($('#gate').classList.contains('gone')) return;
+    if(ts-last>2600){last=ts;k=(k+1)%M.length;amp=1;}
+    amp*=.97; var n=M[k][0]*Math.PI,m=M[k][1]*Math.PI,st=.01+amp*.07,R=S/2-6;
+    g.fillStyle='rgba(0,0,0,.28)'; g.fillRect(0,0,S,S);
+    g.fillStyle='rgba(239,180,120,.85)';
+    for(var i=0;i<P.length;i++){var p=P[i],v=Math.cos(n*p.x)*Math.cos(m*p.y)-Math.cos(m*p.x)*Math.cos(n*p.y),q=Math.abs(v)*st;
+      p.x+=(Math.random()-.5)*q;p.y+=(Math.random()-.5)*q;if(p.x*p.x+p.y*p.y>1){var r=rp();p.x=r.x;p.y=r.y;}
+      g.fillRect(S/2+p.x*R,S/2+p.y*R,1.2,1.2);}
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
 document.addEventListener('visibilitychange',function(){if(document.hidden&&ac&&!om.on&&!tan.on)ac.suspend();else if(!document.hidden&&ac)ac.resume();});
 addEventListener('resize',function(){resize();sizeInst();});
 

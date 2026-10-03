@@ -90,18 +90,27 @@
     <input type="range" id="saFine" min="-50" max="50" value="0" aria-label="Fine tune Sa">
   </div>
 
-  <!-- MIC -->
-  <div class="panel" data-p="mic">
-    <div class="ph"><h2>Listen</h2><p>the world around you, drawn in sand</p></div>
-    <div class="mic">
-      <button class="mic-btn" id="micBtn"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Start listening</span></button>
-      <div class="mic-read">
-        <div class="mic-hz" id="micHz">— Hz</div>
-        <div class="mic-note" id="micNote">sing, hum, or play</div>
-        <div class="meter"><i id="micLvl"></i></div>
+  <!-- LOOP & RECORD -->
+  <div class="panel" data-p="loop">
+    <div class="ph"><h2>Loop</h2><p>layer it · record it · keep it</p></div>
+    <div class="looper">
+      <button class="loop-ring" id="layBtn" aria-label="Record a loop layer"><span id="loopRing"><i></i></span><b></b></button>
+      <div class="loop-side">
+        <div class="loop-lbl" id="layLbl">Record first layer</div>
+        <div class="loop-len" id="loopLen"></div>
+        <div class="loop-layers" id="loopLayers"></div>
+        <div class="loop-row">
+          <button class="pill" id="undoBtn" disabled>Undo</button>
+          <button class="pill" id="clearBtn" disabled>Clear</button>
+          <button class="pill save" id="saveLoopBtn" disabled>Save loop</button>
+        </div>
       </div>
     </div>
-    <p class="fine">Sound is analysed on your phone only — nothing is recorded or sent.</p>
+    <div class="sess">
+      <button class="rec" id="recBtn"><i></i><span id="recLbl">Record</span></button>
+      <div><b id="recTime">0:00</b><small>Record everything you play — it saves to your phone when you stop.</small></div>
+    </div>
+    <div class="saves" id="saves"></div>
   </div>
 
 </section>
@@ -112,19 +121,20 @@
   <button data-p="djembe" aria-label="Djembe"><svg viewBox="0 0 32 32"><ellipse cx="16" cy="6" rx="10" ry="2.6"/><path d="M6 6c0 6 6 8 7 12l-2 10h10l-2-10c1-4 7-6 7-12"/><path d="M9 9l4 4M23 9l-4 4" opacity=".5"/></svg><span>Djembe</span></button>
   <button data-p="om" aria-label="Om"><span class="om-g">ॐ</span><span>Om</span></button>
   <button data-p="raga" aria-label="Raga and tanpura"><svg viewBox="0 0 32 32"><circle cx="16" cy="24" r="6"/><path d="M16 18V3M13.5 6h5M13.5 10h5" /><path d="M14 24h4" opacity=".5"/></svg><span>Raga</span></button>
-  <button data-p="mic" aria-label="Listen with microphone"><svg viewBox="0 0 32 32"><rect x="12" y="4" width="8" height="15" rx="4"/><path d="M7 15a9 9 0 0 0 18 0M16 24v4"/></svg><span>Listen</span></button>
+  <button data-p="loop" aria-label="Loop and record"><svg viewBox="0 0 32 32"><path d="M8 11a9 9 0 0 1 15.5-2.5M24 21a9 9 0 0 1-15.5 2.5"/><path d="M24 4v5h-5M8 28v-5h5"/><circle cx="16" cy="16" r="2.6" class="fill"/></svg><span>Loop</span></button>
 </nav>
 
 <div class="gate" id="gate">
   <div class="gate-in">
-    <div class="gate-om">ॐ</div>
+    <canvas class="gate-cym" id="gateCym" aria-hidden="true"></canvas>
     <h1>Ether</h1>
-    <p>A small world of sound.<br>Handpan, pad, djembe, raga and Om —<br>drawn as sand, grown as a golden tree.</p>
+    <p>A small world of sound.<br>Play it, loop it, layer it —<br>and take your vibration home.</p>
     <button id="enter">Tap to enter</button>
     <small>Sound on · headphones make it deeper</small>
   </div>
 </div>
 
+<div class="toast" id="toast" role="status"></div>
 <script src="ether.js"></script>
 </body>
 </html>
