@@ -35,7 +35,7 @@ var loopIO=('IntersectionObserver' in window)?new IntersectionObserver(function(
   });
 },{threshold:.2}):null;
 function watchLoops(root){root.querySelectorAll('video[data-loop]').forEach(function(v){ if(loopIO) loopIO.observe(v); else {v.src=v.getAttribute('data-src');v.play();} })}
-function loopVideo(src,poster){return '<video data-loop data-src="'+esc(src)+'"'+(poster?' poster="'+esc(poster)+'"':'')+' muted loop playsinline preload="none" aria-hidden="true"></video>'}
+function loopVideo(src){return '<video data-loop data-src="'+esc(src)+'" muted loop playsinline preload="none" aria-hidden="true"></video>'} // the lazy <img> behind it is the poster
 
 /* index: one motion card per project */
 (function buildIndex(){
@@ -144,21 +144,25 @@ addEventListener('keydown',function(e){
   l.addEventListener('touchend',function(e){ if(x0===null) return; var dx=e.changedTouches[0].clientX-x0; if(Math.abs(dx)>50) lbStep(dx<0?1:-1); x0=null; });
 })();
 
-/* ═════ CURSOR ═════ */
+/* ═════ CURSOR ═════ (desktop only; the follow loop sleeps when the mouse is still) */
 var cd=document.getElementById('cd'), cr=document.getElementById('cr');
-var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
-addEventListener('mousemove',function(e){
-  mx=e.clientX;my=e.clientY;
-  cd.style.left=mx+'px';cd.style.top=my+'px';
-},{passive:true});
-(function loop(){rx+=(mx-rx)*.15;ry+=(my-ry)*.15;
-  cr.style.left=rx+'px';cr.style.top=ry+'px';requestAnimationFrame(loop);})();
-var HOV='a,button,.pcard,.chain b,.pill,.door,.vf';
-document.addEventListener('mouseover',function(e){ if(e.target.closest&&e.target.closest(HOV)) cr.classList.add('hov'); });
-document.addEventListener('mouseout',function(e){
-  var from=e.target.closest&&e.target.closest(HOV), to=e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest(HOV);
-  if(from&&!to) cr.classList.remove('hov');
-});
+var FINE=matchMedia('(hover:hover) and (pointer:fine)').matches;
+if(FINE){
+  var mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my,curOn=false;
+  var curLoop=function(){rx+=(mx-rx)*.15;ry+=(my-ry)*.15;
+    cr.style.transform='translate3d('+rx+'px,'+ry+'px,0) translate(-50%,-50%)';
+    if(Math.abs(mx-rx)+Math.abs(my-ry)>.3) requestAnimationFrame(curLoop); else curOn=false;};
+  addEventListener('mousemove',function(e){
+    mx=e.clientX;my=e.clientY; cd.style.transform='translate3d('+mx+'px,'+my+'px,0) translate(-50%,-50%)';
+    if(!curOn){curOn=true;requestAnimationFrame(curLoop);}
+  },{passive:true});
+  var HOV='a,button,.pcard,.chain b,.pill,.door,.vf,.vpc,.web';
+  document.addEventListener('mouseover',function(e){ if(e.target.closest&&e.target.closest(HOV)) cr.classList.add('hov'); });
+  document.addEventListener('mouseout',function(e){
+    var from=e.target.closest&&e.target.closest(HOV), to=e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest(HOV);
+    if(from&&!to) cr.classList.remove('hov');
+  });
+}else{ cd.remove(); cr.remove(); }
 
 /* ═════ WORD PULL-UP ═════ */
 function splitWords(el){
@@ -219,8 +223,15 @@ function updateChars(){
     }
   });
 }
-addEventListener('scroll',updateChars,{passive:true});
-addEventListener('resize',updateChars,{passive:true});
+var charTick=false, charVis=true;
+function charsOnScroll(){ if(charTick||!charVis) return; charTick=true; requestAnimationFrame(function(){charTick=false;updateChars();}); }
+if('IntersectionObserver' in window&&charEls.length){
+  charVis=false;
+  new IntersectionObserver(function(es){es.forEach(function(e){charVis=e.isIntersecting; if(charVis) updateChars();});},{rootMargin:'20% 0px'})
+    .observe(charEls[0].el);
+}
+addEventListener('scroll',charsOnScroll,{passive:true});
+addEventListener('resize',charsOnScroll,{passive:true});
 updateChars();
 
 /* ═════ REVEALS ═════ */
@@ -234,9 +245,9 @@ var stIO=new IntersectionObserver(function(es){
   es.forEach(function(e){
     if(e.isIntersecting){
       var kids=[].slice.call(e.target.querySelectorAll(':scope > .st'));
-      var step=e.target.id==='vgrid'?0.07:0.15;
+      var step=Math.min(e.target.id==='vgrid'?0.07:0.12, 0.7/Math.max(1,kids.length));
       kids.forEach(function(c,i){ c.style.transitionDelay=(i*step)+'s'; c.classList.add('in');
-        setTimeout(function(){c.style.transitionDelay=''},(i*step+0.9)*1000); });
+        setTimeout(function(){c.style.transitionDelay=''},(i*step+0.8)*1000); });
       stIO.unobserve(e.target);
     }
   });
@@ -365,3 +376,16 @@ document.addEventListener('click',function(e){
   var b=e.target.closest&&e.target.closest('.ph-blob'); if(!b) return;
   if(!matchMedia('(hover:none)').matches&&window.ccOpen){ e.preventDefault(); window.ccOpen(''); }
 });
+
+/* ═════ VIDEO POWER-SAVING — hero & door films pause when off screen or behind a page ═════ */
+(function(){
+  if(!('IntersectionObserver' in window)) return;
+  ['heroVid','doorVid'].forEach(function(id){
+    var v=document.getElementById(id); if(!v) return; v.__vis=true;
+    new IntersectionObserver(function(es){ v.__vis=es[0].isIntersecting; sync(v); },{threshold:.05}).observe(v);
+  });
+  function sync(v){ var covered=document.documentElement.classList.contains('view-open');
+    if(v.__vis&&!covered&&v.getAttribute('src')){ var p=v.play(); if(p&&p.catch)p.catch(function(){}); } else v.pause(); }
+  addEventListener('hashchange',function(){ setTimeout(function(){['heroVid','doorVid'].forEach(function(id){var v=document.getElementById(id); if(v) sync(v);});},60); });
+  document.addEventListener('visibilitychange',function(){ ['heroVid','doorVid'].forEach(function(id){var v=document.getElementById(id); if(v){ if(document.hidden) v.pause(); else sync(v);} }); });
+})();

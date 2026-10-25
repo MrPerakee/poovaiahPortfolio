@@ -4,8 +4,8 @@ Static site. No build step — open `index.html` through any web server.
 
 ```
 index.html                  page structure (landing + three door pages)
-assets/css/style.css        all styling
-assets/js/main.js           animations, router (#/work · #/hire · #/visual), gallery
+assets/css/style.css        all styling (→ style.min.css via tools/build.py)
+assets/js/main.js           animations, router (→ main.min.js) (#/work · #/hire · #/visual), gallery
 assets/js/visual-assets.js  generated list of Visual Direction frames — don't hand-edit
 assets/img/                 site images (portrait, logos, brand shots)
 resume/                     résumé PDFs
@@ -32,6 +32,13 @@ Projects (title, client, discipline, summary, cover) live in `visual/projects.js
 The Visual page shows one motion card per project; each opens at `#/visual/<project-id>`. Video tiles loop their preview clip while on screen.
 
 Keep each video under ~95 MB (GitHub's per-file limit is 100 MB).
+
+## Before every publish
+
+```bash
+python3 tools/build.py   # minifies CSS/JS and stamps ?v=<hash> so visitors never see a stale cached version
+```
+Edit the readable sources (`style.css`, `main.js`, `ether.css`, `ether.js`) — the `.min` files are generated.
 
 ## Local preview
 

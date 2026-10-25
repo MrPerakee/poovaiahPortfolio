@@ -1,24 +1,41 @@
-# Netlify config — used once the site moves to Netlify (GitHub Pages ignores this file)
+# Netlify config (GitHub Pages ignores this file)
 [build]
   publish = "."
 
+# Pages: always revalidate so updates show immediately
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# CSS/JS are referenced with ?v=<hash> (tools/build.py), so they can be cached for a year
+[[headers]]
+  for = "/assets/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+[[headers]]
+  for = "/assets/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+[[headers]]
+  for = "/ether/*.min.*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Media never changes in place (new files get new names)
 [[headers]]
   for = "/visual/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-
 [[headers]]
   for = "/assets/img/*"
   [headers.values]
     Cache-Control = "public, max-age=604800"
 
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=3600"
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
+# Old single-file versions are not part of the site
+[[redirects]]
+  from = "/harens_ether_v*"
+  to = "/"
+  status = 301

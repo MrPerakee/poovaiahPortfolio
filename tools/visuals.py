@@ -54,6 +54,10 @@ def build(items=None):
           "window.VISUAL_ASSETS = " + json.dumps(shown, indent=2, ensure_ascii=False) + ";\n")
     OUT_JS.write_text(js)
     print(f"built {OUT_JS.relative_to(ROOT)} · {len(projects)} projects · {len(shown)} frames")
+    try:  # re-stamp cache-busting versions so browsers pick up the new gallery
+        subprocess.run([sys.executable, str(ROOT / "tools" / "build.py")], check=True)
+    except Exception as e:
+        print(f"  ! run `python3 tools/build.py` before publishing ({e})")
 
 
 def unique(path):

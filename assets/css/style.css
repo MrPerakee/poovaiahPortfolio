@@ -93,16 +93,16 @@ body{
 
 /* ── NOISE ── */
 .noise-overlay{position:absolute;inset:0;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-image:url("../img/noise.webp");background-size:128px 128px;
   opacity:.7;mix-blend-mode:overlay}
 .bg-noise{position:absolute;inset:0;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n2)'/%3E%3C/svg%3E");
+  background-image:url("../img/noise.webp");background-size:128px 128px;
   opacity:.12}
 
 /* ── CURSOR ── */
 .cdot,.cring{position:fixed;top:0;left:0;pointer-events:none;z-index:9999;border-radius:50%;transform:translate(-50%,-50%)}
-.cdot{width:5px;height:5px;background:var(--ember-lt);box-shadow:0 0 8px var(--ember-lt);will-change:left,top}
-.cring{width:34px;height:34px;border:1px solid rgba(208,138,69,.42);will-change:left,top;
+.cdot{width:5px;height:5px;background:var(--ember-lt);box-shadow:0 0 8px var(--ember-lt);will-change:transform;transform:translate3d(-100px,-100px,0)}
+.cring{width:34px;height:34px;border:1px solid rgba(208,138,69,.42);will-change:transform;transform:translate3d(-100px,-100px,0);
   transition:width .2s var(--ease),height .2s var(--ease),border-color .2s}
 .cring.hov{width:54px;height:54px;border-color:var(--ember)}
 @media(hover:none){.cdot,.cring{display:none}body{cursor:auto}a,button,.pcard,.tile{cursor:pointer}}
@@ -639,7 +639,7 @@ footer{border-top:1px solid var(--line);padding:clamp(1.3rem,2.6vw,2rem) var(--g
   .tile{width:54px}
 }
 
-.img-gg{background-image:url("../img/guntur-gourmet-packaging.webp");background-size:cover;background-position:center}
+.img-gg{background-image:url("../img/guntur-gourmet-packaging-sm.webp");background-size:cover;background-position:center}
 .img-yarns{background-image:url("../img/yarns-of-indigo.webp");background-size:cover;background-position:top center}
 .img-portrait{background-image:url("../img/haren-portrait.webp");background-size:cover;background-position:top center}
 .tile-inner.img-gg,.tile-inner.img-yarns{background-repeat:no-repeat}
@@ -1287,3 +1287,11 @@ a.door:hover .door-icon.dp svg{color:var(--ember-lt);transform:rotate(-8deg) sca
 @keyframes blobMorph{0%,100%{border-radius:58% 42% 55% 45% / 50% 58% 42% 50%}50%{border-radius:45% 55% 42% 58% / 58% 45% 55% 42%}}
 @keyframes blobRing{0%{opacity:.7;transform:scale(.9)}70%,100%{opacity:0;transform:scale(1.45)}}
 @media(max-width:600px){.con-links .cta-wrap{width:100%;max-width:275px}.con-links .cta-wrap .clink{width:100%}}
+
+/* ═══ PERFORMANCE ═══ */
+.tile-inner.gen,.vf-m.gen{animation-play-state:paused}
+.acc-trigger:hover .tile-inner.gen,.prow-trigger:hover .tile-inner.gen,.acc.open .tile-inner.gen,.prow.open .tile-inner.gen,.vf:hover .vf-m.gen{animation-play-state:running}
+.view:not(.show) *{animation-play-state:paused!important}
+.hero-frame,.door.vid,.vhero-frame{contain:paint}
+.view{contain:layout paint}
+@media(prefers-reduced-motion:reduce){.ph-blob,.ph-blob::after,.hero-fallback,.door-fb,.vhero-bg{animation:none!important}}
