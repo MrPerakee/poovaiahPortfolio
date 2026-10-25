@@ -348,6 +348,7 @@ document.addEventListener('click',function(e){
     cc.hidden=false; requestAnimationFrame(function(){cc.classList.add('open')});
     setTimeout(function(){document.getElementById('ccCall').focus()},60);
   }
+  window.ccOpen=open;
   function close(){cc.classList.remove('open');setTimeout(function(){cc.hidden=true},350);if(lastFocus)lastFocus.focus();}
   document.addEventListener('click',function(e){
     var a=e.target.closest&&e.target.closest('a[href^="mailto:"]');
@@ -356,8 +357,11 @@ document.addEventListener('click',function(e){
   },true);
   cc.addEventListener('click',function(e){ if(e.target.closest('[data-cc-close]')) close(); });
   addEventListener('keydown',function(e){ if(e.key==='Escape'&&!cc.hidden){ e.stopImmediatePropagation(); close(); } },true);
-  document.getElementById('ccCopy').addEventListener('click',function(){
-    var b=this; (navigator.clipboard?navigator.clipboard.writeText('+91 77602 00505'):Promise.reject()).then(function(){b.textContent='Copied';},function(){b.textContent='+91 77602 00505';});
-    setTimeout(function(){b.textContent='Copy number'},2000);
-  });
+
 })();
+
+/* phone blob: dials on phones; on a computer it opens the chooser instead */
+document.addEventListener('click',function(e){
+  var b=e.target.closest&&e.target.closest('.ph-blob'); if(!b) return;
+  if(!matchMedia('(hover:none)').matches&&window.ccOpen){ e.preventDefault(); window.ccOpen(''); }
+});

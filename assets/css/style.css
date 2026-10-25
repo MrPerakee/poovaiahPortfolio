@@ -1269,3 +1269,21 @@ a.door:hover .door-icon.dp svg{color:var(--ember-lt);transform:rotate(-8deg) sca
   text-transform:uppercase;cursor:pointer;font-family:inherit;padding:.3rem 0;border-bottom:1px solid rgba(237,235,221,.2)}
 .cc-copy:hover{color:#EDEBDD}
 @media(max-width:600px){.cc{align-items:flex-end;padding:0}.cc-box{border-radius:1.2rem 1.2rem 0 0;padding-bottom:calc(1.4rem + env(safe-area-inset-bottom))}}
+
+/* phone blob — a small bud on the "Begin a conversation" pill */
+.cta-wrap{position:relative;display:inline-flex}
+.ph-blob{position:absolute;top:-21px;right:30px;z-index:2;width:30px;height:30px;
+  display:flex;align-items:center;justify-content:center;text-decoration:none;
+  background:var(--cream);color:var(--black);border-radius:58% 42% 55% 45% / 50% 58% 42% 50%;
+  box-shadow:0 -4px 14px -6px rgba(208,138,69,.55);
+  transition:transform .45s var(--ease),background .3s;animation:blobMorph 7s ease-in-out infinite}
+.ph-blob::before{content:'';position:absolute;left:50%;bottom:-7px;width:18px;height:12px;margin-left:-9px;background:inherit;
+  border-radius:0 0 50% 50%/0 0 100% 100%;z-index:-1} /* the neck that joins it to the pill */
+.ph-blob svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.ph-blob::after{content:'';position:absolute;inset:-5px;border-radius:inherit;border:1px solid rgba(208,138,69,.5);
+  opacity:0;animation:blobRing 3.6s ease-out infinite}
+.ph-blob:hover{transform:translateY(-2px) scale(1.12) rotate(-8deg)}
+.ph-blob:hover svg{color:var(--ember)}
+@keyframes blobMorph{0%,100%{border-radius:58% 42% 55% 45% / 50% 58% 42% 50%}50%{border-radius:45% 55% 42% 58% / 58% 45% 55% 42%}}
+@keyframes blobRing{0%{opacity:.7;transform:scale(.9)}70%,100%{opacity:0;transform:scale(1.45)}}
+@media(max-width:600px){.con-links .cta-wrap{width:100%;max-width:275px}.con-links .cta-wrap .clink{width:100%}}
