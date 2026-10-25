@@ -1025,14 +1025,20 @@ html.view-open,html.view-open body{overflow:hidden}
 .co-site{margin-top:0;flex-shrink:0;white-space:nowrap}
 @media(max-width:600px){.co-site{margin-top:.2rem}}
 
-/* Haren's Ether — footer mark, doorway to /ether */
-.ether-link{font-family:'Syncopate',var(--display);font-style:normal;font-weight:700;font-size:clamp(10px,.8vw,12px);
-  letter-spacing:.38em;text-transform:uppercase;text-decoration:none;
-  background:linear-gradient(100deg,var(--cream-56) 0%,var(--cream-56) 40%,var(--ember-lt) 50%,var(--cream-56) 60%,var(--cream-56) 100%);
-  background-size:300% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;color:transparent;
-  transition:letter-spacing .6s var(--ease);animation:etherShine 7s ease-in-out infinite}
-.ether-link:hover{letter-spacing:.46em}
-@keyframes etherShine{0%,70%{background-position:100% 0}100%{background-position:0 0}}
+/* Haren's Ether — footer mark, doorway to /ether: thin display serif, letters ripple on hover */
+.ether-link{position:relative;display:inline-flex;align-items:baseline;gap:.5rem;font-family:'Italiana',var(--serif);font-style:normal;
+  font-weight:400;font-size:clamp(16px,1.25vw,20px);letter-spacing:.08em;color:var(--cream-56);text-decoration:none;padding:.3rem 0}
+.ether-link .el{display:inline-block;transition:transform .5s var(--ease),color .4s;transition-delay:calc(var(--i)*28ms)}
+.ether-link .el.sp{width:.32em}
+.ether-link:hover .el{transform:translateY(-3px);color:var(--ember-lt)}
+.ether-link::before{content:'';position:absolute;left:0;right:1.2rem;bottom:0;height:6px;opacity:0;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='6'%3E%3Cpath d='M0 3 Q6 0 12 3 T24 3' fill='none' stroke='%23EFA059' stroke-width='1'/%3E%3C/svg%3E") repeat-x 0 0/24px 6px;
+  transition:opacity .4s;animation:etherWave 1.6s linear infinite paused}
+.ether-link:hover::before{opacity:.8;animation-play-state:running}
+@keyframes etherWave{to{background-position:24px 0}}
+.ether-link::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--ember);align-self:center;
+  box-shadow:0 0 0 0 rgba(208,138,69,.5);animation:etherPing 3.2s ease-out infinite}
+@keyframes etherPing{0%{box-shadow:0 0 0 0 rgba(208,138,69,.55)}70%,100%{box-shadow:0 0 0 7px rgba(208,138,69,0)}}
 
 /* Shanqualia */
 .t-anik{background:linear-gradient(125deg,#06100f,#2E8C8A 38%,#B8D4C8 60%,#050b0b);background-size:280% 280%}
@@ -1270,23 +1276,16 @@ a.door:hover .door-icon.dp svg{color:var(--ember-lt);transform:rotate(-8deg) sca
 .cc-copy:hover{color:#EDEBDD}
 @media(max-width:600px){.cc{align-items:flex-end;padding:0}.cc-box{border-radius:1.2rem 1.2rem 0 0;padding-bottom:calc(1.4rem + env(safe-area-inset-bottom))}}
 
-/* phone blob — a small bud on the "Begin a conversation" pill */
-.cta-wrap{position:relative;display:inline-flex}
-.ph-blob{position:absolute;top:-21px;right:30px;z-index:2;width:30px;height:30px;
-  display:flex;align-items:center;justify-content:center;text-decoration:none;
-  background:var(--cream);color:var(--black);border-radius:58% 42% 55% 45% / 50% 58% 42% 50%;
-  box-shadow:0 -4px 14px -6px rgba(208,138,69,.55);
-  transition:transform .45s var(--ease),background .3s;animation:blobMorph 7s ease-in-out infinite}
-.ph-blob::before{content:'';position:absolute;left:50%;bottom:-7px;width:18px;height:12px;margin-left:-9px;background:inherit;
-  border-radius:0 0 50% 50%/0 0 100% 100%;z-index:-1} /* the neck that joins it to the pill */
-.ph-blob svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
-.ph-blob::after{content:'';position:absolute;inset:-5px;border-radius:inherit;border:1px solid rgba(208,138,69,.5);
-  opacity:0;animation:blobRing 3.6s ease-out infinite}
-.ph-blob:hover{transform:translateY(-2px) scale(1.12) rotate(-8deg)}
-.ph-blob:hover svg{color:var(--ember)}
-@keyframes blobMorph{0%,100%{border-radius:58% 42% 55% 45% / 50% 58% 42% 50%}50%{border-radius:45% 55% 42% 58% / 58% 45% 55% 42%}}
-@keyframes blobRing{0%{opacity:.7;transform:scale(.9)}70%,100%{opacity:0;transform:scale(1.45)}}
-@media(max-width:600px){.con-links .cta-wrap{width:100%;max-width:275px}.con-links .cta-wrap .clink{width:100%}}
+/* call button — sits beside "Begin a conversation" */
+.cta-wrap{display:inline-flex;align-items:center;gap:.45rem}
+.call-btn{width:2.6rem;height:2.6rem;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:transparent;color:var(--cream);border:1px solid var(--line-mid);text-decoration:none;
+  transition:background .3s,color .3s,border-color .3s,transform .4s var(--ease)}
+.call-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.call-btn:hover{background:var(--cream);color:var(--black);border-color:var(--cream);transform:rotate(-10deg)}
+.hire-cta .call-btn{color:#EDEBDD;border-color:rgba(237,235,221,.25)}
+.hire-cta .call-btn:hover{background:#EDEBDD;color:#0E0E0E}
+@media(max-width:600px){.con-links .cta-wrap{width:100%;max-width:275px}.con-links .cta-wrap .clink{flex:1;width:auto}}
 
 /* ═══ PERFORMANCE ═══ */
 .tile-inner.gen,.vf-m.gen{animation-play-state:paused}
@@ -1294,4 +1293,4 @@ a.door:hover .door-icon.dp svg{color:var(--ember-lt);transform:rotate(-8deg) sca
 .view:not(.show) *{animation-play-state:paused!important}
 .hero-frame,.door.vid,.vhero-frame{contain:paint}
 .view{contain:layout paint}
-@media(prefers-reduced-motion:reduce){.ph-blob,.ph-blob::after,.hero-fallback,.door-fb,.vhero-bg{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.ether-link::after,.hero-fallback,.door-fb,.vhero-bg{animation:none!important}}

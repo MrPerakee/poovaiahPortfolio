@@ -371,9 +371,9 @@ document.addEventListener('click',function(e){
 
 })();
 
-/* phone blob: dials on phones; on a computer it opens the chooser instead */
+/* call button: dials on phones; on a computer it opens the chooser instead */
 document.addEventListener('click',function(e){
-  var b=e.target.closest&&e.target.closest('.ph-blob'); if(!b) return;
+  var b=e.target.closest&&e.target.closest('.call-btn'); if(!b) return;
   if(!matchMedia('(hover:none)').matches&&window.ccOpen){ e.preventDefault(); window.ccOpen(''); }
 });
 
@@ -389,3 +389,10 @@ document.addEventListener('click',function(e){
   addEventListener('hashchange',function(){ setTimeout(function(){['heroVid','doorVid'].forEach(function(id){var v=document.getElementById(id); if(v) sync(v);});},60); });
   document.addEventListener('visibilitychange',function(){ ['heroVid','doorVid'].forEach(function(id){var v=document.getElementById(id); if(v){ if(document.hidden) v.pause(); else sync(v);} }); });
 })();
+
+/* Haren's Ether mark — split into letters for the hover ripple */
+document.querySelectorAll('.ether-link').forEach(function(a){
+  var t=a.textContent; a.setAttribute('aria-label',t+' — enter'); a.textContent='';
+  t.split('').forEach(function(ch,i){var s=document.createElement('span');s.className='el'+(ch===' '?' sp':'');s.style.setProperty('--i',i);
+    s.setAttribute('aria-hidden','true');s.textContent=ch===' '?'\u00a0':ch;a.appendChild(s);});
+});

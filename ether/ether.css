@@ -156,11 +156,12 @@ input[type=checkbox]{accent-color:var(--ember);width:16px;height:16px}
   background:radial-gradient(ellipse at 50% 40%,rgba(208,138,69,.12),transparent 60%),rgba(0,0,0,.92);
   transition:opacity .9s var(--ease),visibility 0s .9s}
 .gate.gone{opacity:0;visibility:hidden}
-.gate-in{padding:24px;max-width:340px}
+.gate-in{padding:max(16px,env(safe-area-inset-top)) 20px max(16px,env(safe-area-inset-bottom));max-width:min(560px,100%);max-height:100svh;overflow-y:auto;
+  display:flex;flex-direction:column;align-items:center;justify-content:center}
 .gate-om{font-size:84px;color:var(--ember-lt);line-height:1;text-shadow:0 0 40px rgba(208,138,69,.5);animation:breathe 6s ease-in-out infinite}
-.gate h1{font-family:var(--wide);font-weight:700;letter-spacing:.5em;padding-left:.5em;font-size:20px;margin:18px 0 12px;text-transform:uppercase}
-.gate p{font-family:var(--serif);font-style:italic;font-size:18px;line-height:1.45;color:var(--c72)}
-.gate button{margin:26px 0 12px;background:var(--cream);color:#000;border-radius:999px;padding:14px 30px;font-size:12px;
+.gate h1{font-family:var(--wide);font-weight:700;letter-spacing:.5em;padding-left:.5em;font-size:clamp(16px,2.6vh,22px);margin:clamp(12px,2.6vh,26px) 0 clamp(8px,1.4vh,14px);text-transform:uppercase}
+.gate p{font-family:var(--serif);font-style:italic;font-size:clamp(15px,2.3vh,20px);line-height:1.45;color:var(--c72);max-width:340px}
+.gate button{margin:clamp(14px,3vh,28px) 0 clamp(8px,1.4vh,12px);background:var(--cream);color:#000;border-radius:999px;padding:14px 30px;font-size:12px;
   letter-spacing:.2em;text-transform:uppercase;font-weight:500}
 .gate small{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--c34)}
 
@@ -175,8 +176,11 @@ input[type=checkbox]{accent-color:var(--ember);width:16px;height:16px}
 @media(max-height:640px){:root{--sheet:min(50svh,320px)}.om-btn,.mic-btn{width:92px;height:92px}.om-btn{font-size:46px}}
 
 /* opening cymatics */
-.gate-cym{display:block;width:200px;height:200px;margin:0 auto;border-radius:50%;
+.gate-cym{display:block;flex-shrink:0;margin:0 auto;border-radius:50%;
+  width:min(74vw,42svh,440px);height:min(74vw,42svh,440px);
   box-shadow:0 0 0 1px rgba(237,235,221,.14),0 0 60px rgba(208,138,69,.18)}
+@media(min-width:900px){.gate-cym{width:min(52vh,40vw,500px);height:min(52vh,40vw,500px)}}
+@media(max-height:560px){.gate-cym{width:min(60vw,38svh);height:min(60vw,38svh)}.gate small{display:none}}
 
 /* full-screen instruments */
 .ph .fs{width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);color:var(--c72);flex-shrink:0;
