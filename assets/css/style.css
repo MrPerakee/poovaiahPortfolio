@@ -1276,16 +1276,8 @@ a.door:hover .door-icon.dp svg{color:var(--ember-lt);transform:rotate(-8deg) sca
 .cc-copy:hover{color:#EDEBDD}
 @media(max-width:600px){.cc{align-items:flex-end;padding:0}.cc-box{border-radius:1.2rem 1.2rem 0 0;padding-bottom:calc(1.4rem + env(safe-area-inset-bottom))}}
 
-/* call button — sits beside "Begin a conversation" */
-.cta-wrap{display:inline-flex;align-items:center;gap:.45rem}
-.call-btn{width:2.6rem;height:2.6rem;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  background:transparent;color:var(--cream);border:1px solid var(--line-mid);text-decoration:none;
-  transition:background .3s,color .3s,border-color .3s,transform .4s var(--ease)}
-.call-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
-.call-btn:hover{background:var(--cream);color:var(--black);border-color:var(--cream);transform:rotate(-10deg)}
-.hire-cta .call-btn{color:#EDEBDD;border-color:rgba(237,235,221,.25)}
-.hire-cta .call-btn:hover{background:#EDEBDD;color:#0E0E0E}
-@media(max-width:600px){.con-links .cta-wrap{width:100%;max-width:275px}.con-links .cta-wrap .clink{flex:1;width:auto}}
+.cta-wrap{display:inline-flex}
+@media(max-width:600px){.con-links .cta-wrap{width:100%;max-width:275px}.con-links .cta-wrap .clink{flex:1}}
 
 /* ═══ PERFORMANCE ═══ */
 .tile-inner.gen,.vf-m.gen{animation-play-state:paused}
@@ -1294,3 +1286,50 @@ a.door:hover .door-icon.dp svg{color:var(--ember-lt);transform:rotate(-8deg) sca
 .hero-frame,.door.vid,.vhero-frame{contain:paint}
 .view{contain:layout paint}
 @media(prefers-reduced-motion:reduce){.ether-link::after,.hero-fallback,.door-fb,.vhero-bg{animation:none!important}}
+
+/* ═══ BIO — clean editorial layout ═══
+   desktop: portrait beside name + intro, body in two columns underneath, principles as a band
+   phone:   small portrait beside the name, everything else full width */
+.bio-grid{display:grid;grid-template-columns:clamp(220px,22vw,300px) 1fr;
+  grid-template-areas:"portrait name" "portrait intro" "body body" "pr pr";
+  column-gap:clamp(1.8rem,4vw,4rem);row-gap:0;align-items:start}
+.bio-grid .portrait{grid-area:portrait;width:100%;max-width:none;margin:0;aspect-ratio:4/5;align-self:stretch;min-height:100%}
+.bio-grid .bio-name{grid-area:name;align-self:end;margin:0 0 .2rem}
+.bio-intro{grid-area:intro;align-self:start}
+.bio-intro .bio-roles{margin:1rem 0 1.3rem}
+.bio-intro .lead{font-family:var(--serif);font-style:italic;font-size:var(--t-h4);line-height:1.5;color:var(--cream-90);
+  letter-spacing:0;margin:0;max-width:52ch}
+[data-theme="light"] .bio-intro .lead{color:rgba(237,235,221,.92)}
+.bio-grid .bio-body{grid-area:body;columns:2;column-gap:clamp(1.8rem,4vw,4rem);
+  margin-top:clamp(1.8rem,3.4vw,2.8rem);padding-top:clamp(1.6rem,3vw,2.4rem);border-top:1px solid var(--line)}
+.bio-grid .bio-body p{max-width:none;break-inside:avoid;margin:0 0 1.05rem}
+.bio-grid .principles{grid-area:pr;grid-template-columns:repeat(4,1fr);margin-top:clamp(1.6rem,3vw,2.4rem)}
+@media(max-width:940px){
+  .bio-grid{grid-template-columns:clamp(84px,24vw,150px) 1fr;grid-template-areas:"portrait name" "intro intro" "body body" "pr pr";
+    column-gap:1.1rem;align-items:center}
+  .bio-grid .portrait{aspect-ratio:1/1;align-self:center;min-height:0;border-radius:clamp(.7rem,2vw,1rem)}
+  .bio-grid .bio-name{align-self:center;margin:0}
+  .bio-intro .bio-roles{margin:1.1rem 0 1.1rem}
+  .bio-grid .bio-body{columns:1}
+  .bio-grid .principles{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .bio-grid .bio-name{font-size:clamp(24px,7vw,30px);line-height:1.08}
+  .bio-grid .bio-name .em{font-size:.66em;margin-top:.2em}
+  .bio-intro .rpill{font-size:9.5px;padding:.34rem .7rem}
+}
+
+/* Digital builds — compact rows on phones */
+@media(max-width:700px){
+  .webs{grid-template-columns:1fr;gap:.35rem}
+  .web{display:grid;grid-template-columns:96px 1fr;grid-template-rows:auto 1fr;border-radius:.9rem}
+  .web-bar{display:none}
+  .web-face{grid-row:1/3;aspect-ratio:auto;height:100%;min-height:96px}
+  .web-face b{font-size:15px;padding:0 .4rem;text-align:center;line-height:1.15}
+  .web-b{grid-row:1/3;padding:.75rem .85rem;gap:.3rem}
+  .web-d{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13px;line-height:1.45}
+  .web-tags{display:none}
+  .web-role{font-size:9px;letter-spacing:.12em}
+  .web-st{font-size:7.5px;padding:.2rem .45rem}
+  .webs-head{gap:.8rem}
+}

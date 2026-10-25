@@ -371,11 +371,6 @@ document.addEventListener('click',function(e){
 
 })();
 
-/* call button: dials on phones; on a computer it opens the chooser instead */
-document.addEventListener('click',function(e){
-  var b=e.target.closest&&e.target.closest('.call-btn'); if(!b) return;
-  if(!matchMedia('(hover:none)').matches&&window.ccOpen){ e.preventDefault(); window.ccOpen(''); }
-});
 
 /* ═════ VIDEO POWER-SAVING — hero & door films pause when off screen or behind a page ═════ */
 (function(){
