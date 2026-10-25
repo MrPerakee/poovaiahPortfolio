@@ -179,7 +179,7 @@ function splitWords(el){
     var star = el.querySelector('.hero-star');
     var starHTML = star ? star.outerHTML : '';
     var txt = el.textContent.replace('*','').trim();
-    txt.split(/\s+/).forEach(function(w){
+    txt.split(/[ \t\n\r]+/).forEach(function(w){
       html+='<span class="w"><span>'+w+'</span></span> ';
     });
     html += starHTML;

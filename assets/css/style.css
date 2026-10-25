@@ -1026,7 +1026,7 @@ html.view-open,html.view-open body{overflow:hidden}
 @media(max-width:600px){.co-site{margin-top:.2rem}}
 
 /* Haren's Ether — footer mark, doorway to /ether: thin display serif, letters ripple on hover */
-.ether-link{position:relative;display:inline-flex;align-items:baseline;gap:.5rem;font-family:'Italiana',var(--serif);font-style:normal;
+.ether-link{position:relative;display:inline-flex;align-items:baseline;gap:0;font-family:'Italiana',var(--serif);font-style:normal;
   font-weight:400;font-size:clamp(16px,1.25vw,20px);letter-spacing:.08em;color:var(--cream-56);text-decoration:none;padding:.3rem 0}
 .ether-link .el{display:inline-block;transition:transform .5s var(--ease),color .4s;transition-delay:calc(var(--i)*28ms)}
 .ether-link .el.sp{width:.32em}
@@ -1036,7 +1036,7 @@ html.view-open,html.view-open body{overflow:hidden}
   transition:opacity .4s;animation:etherWave 1.6s linear infinite paused}
 .ether-link:hover::before{opacity:.8;animation-play-state:running}
 @keyframes etherWave{to{background-position:24px 0}}
-.ether-link::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--ember);align-self:center;
+.ether-link::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--ember);align-self:center;margin-left:.55rem;flex-shrink:0;
   box-shadow:0 0 0 0 rgba(208,138,69,.5);animation:etherPing 3.2s ease-out infinite}
 @keyframes etherPing{0%{box-shadow:0 0 0 0 rgba(208,138,69,.55)}70%,100%{box-shadow:0 0 0 7px rgba(208,138,69,0)}}
 
@@ -1274,7 +1274,20 @@ a.door:hover .door-icon.dp svg{color:var(--ember-lt);transform:rotate(-8deg) sca
 .cc-copy{margin-top:1rem;background:none;border:0;color:rgba(237,235,221,.55);font-size:var(--t-micro);letter-spacing:.18em;
   text-transform:uppercase;cursor:pointer;font-family:inherit;padding:.3rem 0;border-bottom:1px solid rgba(237,235,221,.2)}
 .cc-copy:hover{color:#EDEBDD}
-@media(max-width:600px){.cc{align-items:flex-end;padding:0}.cc-box{border-radius:1.2rem 1.2rem 0 0;padding-bottom:calc(1.4rem + env(safe-area-inset-bottom))}}
+/* phones: a compact floating card in the thumb zone — low, but not glued to the edge */
+@media(max-width:600px){
+  .cc{align-items:flex-end;padding:0 16px calc(clamp(56px,11svh,110px) + env(safe-area-inset-bottom))}
+  .cc-box{width:min(340px,100%);border-radius:1.1rem;padding:1rem 1rem .9rem}
+  .cc-x{top:.6rem;right:.6rem;width:30px;height:30px;font-size:11px}
+  .cc-eyebrow{font-size:9px;letter-spacing:.2em;margin-bottom:.35rem}
+  .cc-t{font-size:19px;margin-bottom:.8rem;padding-right:2rem}
+  .cc-opts{gap:.3rem}
+  .cc-o{padding:.55rem .7rem;gap:.7rem;border-radius:.75rem}
+  .cc-i{width:34px;height:34px}
+  .cc-i svg{width:16px;height:16px}
+  .cc-l b{font-size:14px}
+  .cc-l small{font-size:11.5px}
+}
 
 .cta-wrap{display:inline-flex}
 @media(max-width:600px){.con-links .cta-wrap{width:100%;max-width:275px}.con-links .cta-wrap .clink{flex:1}}
@@ -1332,4 +1345,11 @@ a.door:hover .door-icon.dp svg{color:var(--ember-lt);transform:rotate(-8deg) sca
   .web-role{font-size:9px;letter-spacing:.12em}
   .web-st{font-size:7.5px;padding:.2rem .45rem}
   .webs-head{gap:.8rem}
+}
+
+/* mobile polish — final pass */
+.co-logo{width:auto;object-fit:contain}
+@media(max-width:700px){
+  .acc-link,.eng-go,.vp-all,.co-site{padding-top:.7rem;padding-bottom:.7rem;margin-top:.3rem}
+  .re-proof a{padding:.35rem 0;display:inline-block}
 }
