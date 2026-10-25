@@ -332,3 +332,32 @@ document.addEventListener('click',function(e){
   if(current){ goLanding(href); return; }
   t.scrollIntoView({behavior:'smooth'});
 });
+
+/* ═════ CONTACT CHOOSER — call · WhatsApp · email ═════
+   Every "Begin a conversation" / "Start this" / small-work link opens it; the email subject carries through. */
+(function(){
+  var cc=document.getElementById('cc'); if(!cc) return;
+  var PH='+917760200505', WA='917760200505', EM='harenpoovaiah@yahoo.co.in', lastFocus=null;
+  function subjOf(a){var m=(a.getAttribute('href')||'').match(/subject=([^&]*)/);return m?decodeURIComponent(m[1]):''}
+  function open(subj){
+    lastFocus=document.activeElement;
+    document.getElementById('ccCtx').textContent=subj?subj:'Begin a conversation';
+    var hello='Hi Haren'+(subj?' \u2014 about: '+subj:'')+'. ';
+    document.getElementById('ccWa').href='https://wa.me/'+WA+'?text='+encodeURIComponent(hello);
+    document.getElementById('ccMail').href='mailto:'+EM+(subj?'?subject='+encodeURIComponent(subj):'');
+    cc.hidden=false; requestAnimationFrame(function(){cc.classList.add('open')});
+    setTimeout(function(){document.getElementById('ccCall').focus()},60);
+  }
+  function close(){cc.classList.remove('open');setTimeout(function(){cc.hidden=true},350);if(lastFocus)lastFocus.focus();}
+  document.addEventListener('click',function(e){
+    var a=e.target.closest&&e.target.closest('a[href^="mailto:"]');
+    if(!a||cc.contains(a)) return;
+    e.preventDefault(); e.stopPropagation(); open(subjOf(a));
+  },true);
+  cc.addEventListener('click',function(e){ if(e.target.closest('[data-cc-close]')) close(); });
+  addEventListener('keydown',function(e){ if(e.key==='Escape'&&!cc.hidden){ e.stopImmediatePropagation(); close(); } },true);
+  document.getElementById('ccCopy').addEventListener('click',function(){
+    var b=this; (navigator.clipboard?navigator.clipboard.writeText('+91 77602 00505'):Promise.reject()).then(function(){b.textContent='Copied';},function(){b.textContent='+91 77602 00505';});
+    setTimeout(function(){b.textContent='Copy number'},2000);
+  });
+})();
