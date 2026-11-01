@@ -9,7 +9,13 @@ function setVid(id,url){
   v.src=url; v.addEventListener('error',function(){v.style.display='none'});
   var p=v.play(); if(p&&p.catch) p.catch(function(){});
 }
-setVid('heroVid',HERO_VIDEO); setVid('doorVid',DOOR_VIDEO);
+setVid('heroVid',HERO_VIDEO);
+/* the second film sits further down the page — fetch it only when the visitor gets near it */
+(function(){var d=document.getElementById('doorVid'); if(!d) return;
+  if(!('IntersectionObserver' in window)){ setVid('doorVid',DOOR_VIDEO); return; }
+  var io=new IntersectionObserver(function(es){ if(es[0].isIntersecting){ io.disconnect(); setVid('doorVid',DOOR_VIDEO); } },{rootMargin:'600px 0px'});
+  io.observe(d);
+})();
 
 /* ═════ VISUAL DIRECTION — projects → frames ═════
    Data comes from assets/js/visual-assets.js (built from visual/projects.json + visual/manifest.json).
