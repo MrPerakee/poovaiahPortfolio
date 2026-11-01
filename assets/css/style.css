@@ -1467,3 +1467,32 @@ a.door:hover .door-icon.dp svg{color:var(--ember-lt);transform:rotate(-8deg) sca
 .bgx-p .sec-head{font-size:var(--t-h3);margin-bottom:1rem}
 @media(hover:none){.bgx-t,.bgx-tabs button{cursor:pointer}}
 @media(max-width:600px){.bgx-tabs{margin:0 1rem;max-width:calc(100% - 2rem);overflow-x:auto}.bgx-tabs button{padding:.5rem .8rem;white-space:nowrap}}
+
+/* ═════ LAPTOP & DESKTOP TYPE — a larger, calmer reading scale (phones and tablets untouched) ═════ */
+@media (min-width:1024px){
+  :root{
+    --t-micro:clamp(11px,.78vw,12.5px);   /* uppercase labels, nav, pills */
+    --t-label:clamp(11.5px,.84vw,13px);   /* section labels */
+    --t-small:clamp(15px,1.07vw,16.5px);  /* card text, lists, notes */
+    --t-body:clamp(17px,1.2vw,19px);      /* paragraphs */
+    --t-lead:clamp(19.5px,1.4vw,22px);    /* intro statements */
+    --t-h4:clamp(20px,1.5vw,24px);        /* card titles */
+    --t-h3:clamp(24px,1.95vw,31px);
+  }
+  /* small fixed labels that sat outside the scale */
+  .tile-label,.tag,.door-note,.vf-k,.vf-ph,.vf-pages,.main-tag{font-size:11px}
+  .vpc-k span,.web-st{font-size:10.5px}
+  .vf-mt,.web-tags i,.chain i,.web-bar em{font-size:11.5px}
+  .vback b{font-size:15px}
+  .cc-l b{font-size:16.5px} .cc-l small{font-size:14px}
+
+  /* reading rhythm: comfortable line height and line length */
+  p,.pc-detail,.acc-desc,.offer-d,.door-for,.co-note,.web-d,.prow-one,.acc-sub,.vpc-d,.sw-intro{line-height:1.65}
+  .lead,.vh-desc,.hero-quote{line-height:1.45}
+  .acc-desc,.offer-d,.webs-intro,.lens-t,.sec2-d,.sw-intro,.con-sub,.co-note{max-width:62ch}
+  .vh-desc,.hero-quote{font-size:clamp(19px,1.45vw,24px)}
+  .vh-desc{max-width:30ch}
+  .hero-quote{max-width:32ch}
+  .about-body{max-width:56ch;margin-left:auto;margin-right:auto;line-height:1.7}
+  .prow.consult .prow-name{font-size:clamp(17px,1.3vw,20px)}
+}
