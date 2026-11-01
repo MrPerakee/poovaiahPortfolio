@@ -13,6 +13,7 @@ visual/manifest.json        source of truth for the Visual Direction gallery
 visual/photo|video|direction/   optimised media (+ thumbs/)
 tools/visuals.py            media pipeline
 netlify.toml                Netlify config (caching/headers)
+_headers · _redirects        Cloudflare Pages config (same rules)
 ```
 
 ## Adding photos and videos to Visual Direction
@@ -45,3 +46,9 @@ Edit the readable sources (`style.css`, `main.js`, `ether.css`, `ether.js`) — 
 ```bash
 python3 -m http.server 8000   # then open http://localhost:8000
 ```
+
+## Hosting on Cloudflare Pages
+
+Cloudflare dashboard → Workers & Pages → Create → Pages → Connect to Git → this repository.
+Framework preset: None · Build command: (leave empty) · Build output directory: `/`
+Every push to `main` then goes live automatically.

@@ -1,0 +1,3 @@
+# Cloudflare Pages redirects
+/harens_ether_v* / 301
+/README.md / 301
