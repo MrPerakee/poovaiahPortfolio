@@ -1,4 +1,4 @@
-name: Deploy static site to Pages
+name: Redirect old GitHub Pages address to poovaiah.com
 
 on:
   push:
@@ -25,10 +25,28 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Build redirect site
+        run: |
+          mkdir -p _redirect
+          cat > _redirect/index.html <<'HTML'
+          <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+          <title>Haren Poovaiah — moved to poovaiah.com</title>
+          <link rel="canonical" href="https://poovaiah.com/">
+          <meta name="robots" content="noindex">
+          <meta http-equiv="refresh" content="0; url=https://poovaiah.com/">
+          <script>
+            var p=location.pathname.replace(/^\/poovaiahPortfolio/i,'')||'/';
+            location.replace('https://poovaiah.com'+p+location.search+location.hash);
+          </script></head>
+          <body style="background:#000;color:#f2efe9;font-family:sans-serif;text-align:center;padding-top:30vh">
+          <p>Haren's portfolio has moved to <a style="color:#e2703a" href="https://poovaiah.com/">poovaiah.com</a></p>
+          </body></html>
+          HTML
+          cp _redirect/index.html _redirect/404.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: '_redirect'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

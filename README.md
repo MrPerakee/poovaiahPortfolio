@@ -52,6 +52,9 @@ python3 -m http.server 8000   # then open http://localhost:8000
 
 ## Hosting on Cloudflare
 
+Live at **https://poovaiah.com** (www.poovaiah.com also works). Cloudflare Pages project: `poovaiahportfolio`.
+The old GitHub Pages address now only redirects to poovaiah.com (`.github/workflows/pages.yml`).
+
 The site runs on Cloudflare Workers (static assets — the setup Cloudflare now recommends over Pages).
 Every push to `main` builds and goes live automatically.
 
