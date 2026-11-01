@@ -391,3 +391,10 @@ document.querySelectorAll('.ether-link').forEach(function(a){
   t.split('').forEach(function(ch,i){var s=document.createElement('span');s.className='el'+(ch===' '?' sp':'');s.style.setProperty('--i',i);
     s.setAttribute('aria-hidden','true');s.textContent=ch===' '?'\u00a0':ch;a.appendChild(s);});
 });
+
+/* Background panel on Work With Me */
+function bgxT(){var b=document.getElementById('bgx'),o=!b.classList.contains('open');b.classList.toggle('open',o);
+  b.querySelector('.bgx-t').setAttribute('aria-expanded',o);}
+function bgxTab(btn){var k=btn.getAttribute('data-bt'),b=document.getElementById('bgx');
+  b.querySelectorAll('.bgx-tabs button').forEach(function(x){x.classList.toggle('on',x===btn)});
+  b.querySelectorAll('.bgx-p').forEach(function(p){p.classList.toggle('on',p.getAttribute('data-bp')===k)});}
