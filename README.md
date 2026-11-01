@@ -13,7 +13,10 @@ visual/manifest.json        source of truth for the Visual Direction gallery
 visual/photo|video|direction/   optimised media (+ thumbs/)
 tools/visuals.py            media pipeline
 netlify.toml                Netlify config (caching/headers)
-_headers · _redirects        Cloudflare Pages config (same rules)
+wrangler.jsonc              Cloudflare config (static site, no server code)
+.assetsignore               files kept off the public site (tools, README, sources)
+_headers · _redirects        caching + redirects on Cloudflare
+404.html                    page shown for broken links
 ```
 
 ## Adding photos and videos to Visual Direction
@@ -47,8 +50,14 @@ Edit the readable sources (`style.css`, `main.js`, `ether.css`, `ether.js`) — 
 python3 -m http.server 8000   # then open http://localhost:8000
 ```
 
-## Hosting on Cloudflare Pages
+## Hosting on Cloudflare
 
-Cloudflare dashboard → Workers & Pages → Create → Pages → Connect to Git → this repository.
-Framework preset: None · Build command: (leave empty) · Build output directory: `/`
-Every push to `main` then goes live automatically.
+The site runs on Cloudflare Workers (static assets — the setup Cloudflare now recommends over Pages).
+Every push to `main` builds and goes live automatically.
+
+First-time setup (once): Cloudflare dashboard → Workers & Pages → Create → **Import a repository** → this repo.
+Build command: leave empty · Deploy command: `npx wrangler deploy` · Root directory: `/`.
+The Worker name must match `"name"` in `wrangler.jsonc` (`poovaiah-portfolio`).
+
+Custom domain: Worker → Settings → Domains & Routes → Add → Custom domain.
+Check locally: `npx wrangler dev` → http://localhost:8787

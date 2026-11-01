@@ -1,0 +1,23 @@
+# Files in the repo that are not part of the public website
+.git
+.github
+.gitignore
+.nojekyll
+.assetsignore
+.DS_Store
+**/.DS_Store
+node_modules
+tools
+raw
+README.md
+netlify.toml
+wrangler.jsonc
+package.json
+package-lock.json
+**/__pycache__
+*.py
+# readable sources; the site loads the .min versions
+assets/css/style.css
+assets/js/main.js
+ether/ether.css
+ether/ether.js

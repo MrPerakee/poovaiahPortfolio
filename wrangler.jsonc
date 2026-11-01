@@ -1,0 +1,15 @@
+{
+  // Cloudflare Workers config for Haren Poovaiah's portfolio.
+  // Pure static site: no Worker script, Cloudflare serves the files directly.
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "poovaiah-portfolio",
+  "compatibility_date": "2026-10-30",
+  "assets": {
+    "directory": "./",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": { "enabled": true }
+}

@@ -1,20 +1,24 @@
-# Cloudflare Pages headers (GitHub Pages ignores this file)
+# Cloudflare headers (Workers static assets; GitHub Pages ignores this file)
 /*
   Cache-Control: public, max-age=0, must-revalidate
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
 
 /assets/css/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 /assets/js/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
-/ether/*.min.*
+/ether/ether.min.css
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+/ether/ether.min.js
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 /visual/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 /assets/img/*
+  ! Cache-Control
   Cache-Control: public, max-age=604800
-
-# Working files that don't need to be public
-/tools/*
-  X-Robots-Tag: noindex
