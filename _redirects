@@ -1,3 +1,7 @@
-# Cloudflare redirects
+# Cloudflare redirects — old links and working files go to the homepage
 /README.md / 301
+/netlify.toml / 301
+/wrangler.jsonc / 301
+/tools/* / 301
+/.github/* / 301
 /harens_ether_v* / 301
