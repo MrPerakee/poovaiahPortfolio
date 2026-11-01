@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /ether/
+
+Sitemap: https://poovaiah.com/sitemap.xml
