@@ -28,7 +28,7 @@
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..400&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@500..700&family=Syncopate:wght@700&family=Italiana&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..400&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@500..700&family=Syncopate:wght@700&family=Italiana&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..400&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@500..700&family=Syncopate:wght@700&family=Italiana&display=swap" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="assets/css/style.min.css?v=75ef6818eb">
+<link rel="stylesheet" href="assets/css/style.min.css?v=5775a3062a">
 
 </head>
 <body>
@@ -201,7 +201,7 @@
       </a></span>
       <a href="https://linkedin.com/in/haren-p-3a6b25b4" target="_blank" rel="noopener" class="clink">LinkedIn <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       <a href="https://www.instagram.com/haren.poovaiah?igsh=MTBvaTZ5YTdtZmEwaw%3D%3D&amp;utm_source=qr" target="_blank" rel="noopener" class="clink">Instagram <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-      <a href="resume/Haren_Poovaiah_Resume.pdf" download="Haren_Poovaiah_Resume.pdf" class="clink">Résumé <svg class="dl" viewBox="0 0 24 24"><path d="M12 3v13M6 11l6 6 6-6"/></svg></a>
+      <a href="#resume" data-resume="classic" class="clink">Résumé <svg class="dl" viewBox="0 0 24 24"><path d="M12 3v13M6 11l6 6 6-6"/></svg></a>
     </div>
     <div class="vroll rv d3">
       <span>QZine Connex</span><span class="vsep">&#183;</span>
@@ -874,7 +874,7 @@
       <p class="con-sub" style="position:relative;z-index:2">Tell me where you are and where you want to be. I&#8217;ll tell you honestly if I can help.</p>
       <div class="con-links">
         <span class="cta-wrap"><a href="mailto:harenpoovaiah@yahoo.co.in?subject=Let%27s%20build%20something" class="clink primary">Begin a conversation <span class="cta-circ"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a></span>
-        <a href="resume/Haren_Poovaiah_Resume.pdf" download="Haren_Poovaiah_Resume.pdf" class="clink">R&#233;sum&#233; <svg class="dl" viewBox="0 0 24 24"><path d="M12 3v13M6 11l6 6 6-6"/></svg></a>
+        <a href="#resume" data-resume="classic" class="clink">R&#233;sum&#233; <svg class="dl" viewBox="0 0 24 24"><path d="M12 3v13M6 11l6 6 6-6"/></svg></a>
         <a href="https://linkedin.com/in/haren-p-3a6b25b4" target="_blank" rel="noopener" class="clink">LinkedIn <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
     </div>
@@ -940,6 +940,25 @@
 </div>
 
 <!-- Contact chooser -->
+<div class="cc rg" id="rg" role="dialog" aria-modal="true" aria-labelledby="rgT" hidden>
+  <div class="cc-bg" data-rg-close></div>
+  <div class="cc-box">
+    <button class="cc-x" data-rg-close aria-label="Close">&#10005;</button>
+    <p class="cc-eyebrow">R&#233;sum&#233;</p>
+    <h3 class="cc-t" id="rgT">A little about <span class="serif">you first.</span></h3>
+    <form class="rg-f" id="rgF" novalidate>
+      <label class="rg-l"><span>Name</span><input name="name" autocomplete="name" required maxlength="120"></label>
+      <label class="rg-l"><span>Email</span><input name="email" type="email" autocomplete="email" required maxlength="160"></label>
+      <label class="rg-l"><span>Company or role <i>optional</i></span><input name="company" autocomplete="organization" maxlength="160"></label>
+      <label class="rg-l"><span>What brings you here? <i>optional</i></span><input name="reason" maxlength="400" placeholder="A project, a role, a partnership&#8230;"></label>
+      <input class="rg-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button class="rg-go" type="submit"><span>Download r&#233;sum&#233;</span><svg viewBox="0 0 24 24"><path d="M12 3v13M6 11l6 6 6-6"/></svg></button>
+      <p class="rg-msg" id="rgMsg" role="status"></p>
+      <p class="rg-note">Shared only with Haren, to know who he&#8217;s talking to. No newsletters, ever.</p>
+    </form>
+  </div>
+</div>
+
 <div class="cc" id="cc" role="dialog" aria-modal="true" aria-labelledby="ccT" hidden>
   <div class="cc-bg" data-cc-close></div>
   <div class="cc-box">
@@ -966,7 +985,7 @@
 <div class="lb" id="lb" onclick="if(event.target===this)lbClose()"><button class="lb-x" onclick="lbClose()" aria-label="Close">&#10005;</button><button class="lb-nav prev" onclick="lbStep(-1)" aria-label="Previous">&#8592;</button><button class="lb-nav next" onclick="lbStep(1)" aria-label="Next">&#8594;</button><div class="lb-m" id="lbm"></div><div class="lb-c" id="lbc"></div></div>
 
 <script src="assets/js/visual-assets.js?v=43915b42af"></script>
-<script src="assets/js/main.min.js?v=62d0bc273d"></script>
+<script src="assets/js/main.min.js?v=550e205f6a"></script>
 
 </body>
 </html>

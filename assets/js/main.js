@@ -404,3 +404,38 @@ function bgxT(){var b=document.getElementById('bgx'),o=!b.classList.contains('op
 function bgxTab(btn){var k=btn.getAttribute('data-bt'),b=document.getElementById('bgx');
   b.querySelectorAll('.bgx-tabs button').forEach(function(x){x.classList.toggle('on',x===btn)});
   b.querySelectorAll('.bgx-p').forEach(function(p){p.classList.toggle('on',p.getAttribute('data-bp')===k)});}
+
+/* ═════ RÉSUMÉ GATE — name + email before the PDF; saved to Haren's Google Sheet via /api/resume ═════ */
+(function(){
+  var rg=document.getElementById('rg'); if(!rg) return;
+  var f=document.getElementById('rgF'), msg=document.getElementById('rgMsg'), btn=f.querySelector('.rg-go'), file='classic', lastFocus=null;
+  try{ var saved=JSON.parse(localStorage.getItem('rg')||'{}'); ['name','email','company'].forEach(function(k){ if(saved[k]) f[k].value=saved[k]; }); }catch(e){}
+  function open(k){ file=k||'classic'; lastFocus=document.activeElement; msg.textContent=''; rg.hidden=false;
+    requestAnimationFrame(function(){rg.classList.add('open')}); setTimeout(function(){ (f.name.value?f.email:f.name).focus(); },60); }
+  function close(){ rg.classList.remove('open'); setTimeout(function(){rg.hidden=true},350); if(lastFocus) lastFocus.focus(); }
+  window.rgOpen=open;
+  document.addEventListener('click',function(e){
+    var a=e.target.closest&&e.target.closest('[data-resume]'); if(a){ e.preventDefault(); open(a.getAttribute('data-resume')); return; }
+    if(e.target.closest&&e.target.closest('[data-rg-close]')) close();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!rg.hidden) close(); });
+  f.addEventListener('submit',function(e){
+    e.preventDefault(); msg.textContent='';
+    var d={name:f.name.value.trim(),email:f.email.value.trim(),company:f.company.value.trim(),reason:f.reason.value.trim(),
+           website:f.website.value,file:file,page:location.pathname+location.hash,referrer:document.referrer};
+    if(d.name.length<2){ msg.textContent='Please add your name.'; f.name.focus(); return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)){ msg.textContent='Please add a valid email.'; f.email.focus(); return; }
+    btn.disabled=true; btn.classList.add('busy');
+    fetch('/api/resume',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(d)})
+      .then(function(r){ return r.json(); })
+      .then(function(r){
+        if(!r.ok) throw new Error(r.error||'Something went wrong.');
+        try{ localStorage.setItem('rg',JSON.stringify({name:d.name,email:d.email,company:d.company})); }catch(e){}
+        msg.textContent='Thank you \u2014 your download is starting.';
+        location.href=r.url; setTimeout(close,1600);
+      })
+      .catch(function(err){ msg.textContent=err.message||'Could not reach the server \u2014 please try again.'; })
+      .then(function(){ btn.disabled=false; btn.classList.remove('busy'); });
+  });
+  if(/[?&]resume=1/.test(location.search)) setTimeout(function(){ open('classic'); },600);
+})();

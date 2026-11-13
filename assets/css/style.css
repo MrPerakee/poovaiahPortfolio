@@ -1496,3 +1496,27 @@ a.door:hover .door-icon.dp svg{color:var(--ember-lt);transform:rotate(-8deg) sca
   .about-body{max-width:56ch;margin-left:auto;margin-right:auto;line-height:1.7}
   .prow.consult .prow-name{font-size:clamp(17px,1.3vw,20px)}
 }
+
+/* ═════ RÉSUMÉ FORM (reuses the contact pop-up shell) ═════ */
+.rg .cc-box{width:min(420px,100%)}
+.rg-f{display:flex;flex-direction:column;gap:.7rem}
+.rg-l{display:flex;flex-direction:column;gap:.3rem}
+.rg-l span{font-size:var(--t-micro);letter-spacing:.14em;text-transform:uppercase;color:rgba(237,235,221,.6);font-weight:500}
+.rg-l i{font-style:normal;letter-spacing:.06em;text-transform:none;opacity:.6;margin-left:.3em}
+.rg-l input{font:inherit;font-size:15px;color:#EDEBDD;background:rgba(255,255,255,.04);border:1px solid rgba(237,235,221,.14);
+  border-radius:.7rem;padding:.7rem .85rem;outline:none;transition:border-color .25s,background .25s}
+.rg-l input::placeholder{color:rgba(237,235,221,.32)}
+.rg-l input:focus{border-color:rgba(208,138,69,.7);background:rgba(208,138,69,.06)}
+.rg-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.rg-go{margin-top:.35rem;display:flex;align-items:center;justify-content:center;gap:.55rem;font:inherit;font-size:15px;font-weight:500;
+  color:#0b0b0b;background:#EDEBDD;border:0;border-radius:999px;padding:.85rem 1.2rem;cursor:pointer;transition:background .25s,transform .25s}
+.rg-go:hover{background:#EFA059}
+.rg-go svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rg-go.busy{opacity:.6;pointer-events:none}
+.rg-go.busy svg{animation:rgb 1s ease-in-out infinite}
+@keyframes rgb{50%{transform:translateY(3px)}}
+.rg-msg{min-height:1.2em;font-size:13.5px;color:#EFA059;text-align:center}
+.rg-msg:empty{display:none}
+.rg-note{font-size:12px;color:rgba(237,235,221,.45);text-align:center;line-height:1.5}
+@media(max-width:600px){.rg .cc-box{width:min(380px,100%)}.rg-f{gap:.5rem}.rg-l input{padding:.6rem .75rem;font-size:16px}}
+@media(min-width:1024px){.rg-l input,.rg-go{font-size:16px}.rg-note{font-size:13px}}

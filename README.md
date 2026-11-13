@@ -13,7 +13,7 @@ visual/manifest.json        source of truth for the Visual Direction gallery
 visual/photo|video|direction/   optimised media (+ thumbs/)
 tools/visuals.py            media pipeline
 netlify.toml                Netlify config (caching/headers)
-wrangler.jsonc              Cloudflare config (static site, no server code)
+functions/                  résumé gate (Cloudflare Pages Functions)
 .assetsignore               files kept off the public site (tools, README, sources)
 _headers · _redirects        caching + redirects on Cloudflare
 404.html                    page shown for broken links
@@ -64,3 +64,10 @@ The Worker name must match `"name"` in `wrangler.jsonc` (`poovaiah-portfolio`).
 
 Custom domain: Worker → Settings → Domains & Routes → Add → Custom domain.
 Check locally: `npx wrangler dev` → http://localhost:8787
+
+## Résumé gate
+
+Résumé links open a short form (name, email, optional company/reason). `functions/api/resume.js` saves each request to Google Sheets
+and returns a 10-minute download link; direct `/resume/*.pdf` links redirect to the form.
+Google side: `tools/resume-leads.gs` (Apps Script web app). Cloudflare side: Pages → Settings → Variables and Secrets →
+`SHEET_WEBHOOK` = the web-app URL (optional `RESUME_SECRET` = any long random text).
