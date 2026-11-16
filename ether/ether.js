@@ -291,7 +291,7 @@ function camUpdate(){
   cam.cs=Math.cos(cam.yaw); cam.sn=Math.sin(cam.yaw); cam.ct=Math.cos(cam.tilt); cam.st=Math.sin(cam.tilt);
   // size the plate so it fits the free space at any rotation; on wide screens it steps aside for the open panel
   var side=(W>=900&&$('#sheet').classList.contains('open')&&!document.body.classList.contains('full'))?440:0, availW=W-side-28;
-  var ex=0,up=0,dn=0,i,a,x1,y1,k,r=1.4142;
+  var ex=0,up=0,dn=0,i,a,x1,y1,k,r=W<700?1.27:1.4142;
   for(i=0;i<16;i++){a=i/16*TAU;x1=Math.cos(a)*r;y1=Math.sin(a)*r;k=cam.d/(cam.d+y1*cam.st);
     ex=Math.max(ex,Math.abs(x1*k));up=Math.max(up,y1*cam.ct*k);dn=Math.max(dn,-y1*cam.ct*k);}
   var Rt=Math.max(56,Math.min(availW/2/ex,(view.h+20)/(up+dn+.12)));
@@ -579,9 +579,9 @@ function micTick(ts){
 }
 
 /* ─────────── THE EMBER — a presence that listens ───────────
-   One small light lives above the plate. It breathes, lights the sand beneath it, follows your hand, brightens when
-   you are in tune — and when you play a phrase and pause, it plays it back an octave higher and comes home to Sa. */
-var pres={x:.3,y:.2,z:.42,glow:.4,flash:0,tx:0,ty:0,follow:0,phrase:[],timer:0,busy:false,out:null};
+   One small light lives above the plate. It breathes, lights the sand beneath it, follows your hand and
+   brightens with what you play and when you sing in tune. It is silent. */
+var pres={x:.3,y:.2,z:.42,glow:.4,flash:0,tx:0,ty:0,follow:0};
 function presTick(t,ts){
   var tx,ty;
   if(ts-pres.follow<3500){tx=pres.tx;ty=pres.ty;}else{tx=.58*Math.cos(t*.23);ty=.58*Math.sin(t*.31+1);}
@@ -590,29 +590,7 @@ function presTick(t,ts){
   pres.z=.36+.07*br+pres.flash*.05; pres.flash*=.94;
   pres.glow+=((.3+.3*br+energy*.9+pres.flash)-pres.glow)*.2;
 }
-function presOut(){ if(pres.out) return pres.out;
-  var g=ac.createGain(),d=ac.createDelay(1),fb=ac.createGain(); d.delayTime.value=.31; fb.gain.value=.36;
-  g.connect(master); g.connect(d); d.connect(fb); fb.connect(d); d.connect(master); return pres.out=g; } // straight to the speakers, so loops never capture it
-function bell(f,at){
-  [[1,.13,1.9],[2.01,.045,1.1],[3.02,.015,.6]].forEach(function(p){var o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f*p[0];
-    env(g,at,.012,p[1],p[2]);o.connect(g);g.connect(presOut());o.start(at);o.stop(at+p[2]+.1);});
-}
-function heard(f){ // something the visitor played
-  if(!vis.pres||pres.busy||!started) return;
-  pres.flash=Math.max(pres.flash,.5); pres.phrase.push([f,performance.now()]); if(pres.phrase.length>8) pres.phrase.shift();
-  clearTimeout(pres.timer); pres.timer=setTimeout(answer,1600);
-}
-function answer(){
-  var ph=pres.phrase; pres.phrase=[];
-  if(ph.length<2||loop.rec||!vis.pres||!ac) return;
-  pres.busy=true; var at=0,t=now()+.08,seq=[];
-  ph.forEach(function(n,i){ if(i) at+=Math.max(.16,Math.min(.6,(n[1]-ph[i-1][1])/1000)); seq.push([n[0]*2,at]); });
-  var last=seq[seq.length-1][0], home=Sa()*Math.pow(2,Math.round(Math.log2(last/Sa())));
-  if(Math.abs(1200*Math.log2(last/home))>30) seq.push([home,at+=.5]);                                  // come home to Sa
-  seq.forEach(function(n){ bell(n[0],t+n[1]); setTimeout(function(){pres.flash=1;pulse(n[0],.55);},n[1]*1000+80); });
-  setTimeout(function(){pres.busy=false},(at+.9)*1000);
-  if(!store('answered')){store('answered','1');toast('✦ The ember answers — play, pause, and listen');}
-}
+function heard(f){ if(vis.pres) pres.flash=Math.max(pres.flash,.5); } // the ember brightens with what you play — it makes no sound of its own
 /* The plate sings like rubbed glass: touch it and it sounds, drag and the tone follows your finger.
    The centre is deep, the edges high — always on the notes of the chosen raga — in a long, cavernous reverb. */
 var glass={v:{},bus:null};
@@ -622,7 +600,7 @@ function glassBus(){ if(glass.bus) return glass.bus;
 function glassNote(x,y){var n=scale().length*3+1,lad=ladder(n,0),r=Math.min(.999,Math.sqrt(x*x+y*y)/1.12);return lad[Math.floor(r*n)];}
 var GLASS=[[1,0,1],[1,5,.55],[2.32,0,.2],[4.25,0,.06]]; // partials of a wine glass; the detuned pair makes it shimmer
 function glassOn(id,x,y){
-  ensure(); var nt=glassNote(x,y),t=now(),V={f:nt.f,key:nt.semi+12*nt.oct,o:[],g:ac.createGain(),k:0};
+  ensure(); buzz(5); var nt=glassNote(x,y),t=now(),V={f:nt.f,key:nt.semi+12*nt.oct,o:[],g:ac.createGain(),k:0};
   V.g.gain.setValueAtTime(.0001,t); V.g.gain.exponentialRampToValueAtTime(.34,t+.04); V.g.gain.setTargetAtTime(.2,t+.05,.35);
   GLASS.forEach(function(p){var o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=nt.f*p[0];o.detune.value=p[1];g.gain.value=p[2];
     o.connect(g);g.connect(V.g);o.start(t);V.o.push(o);});
@@ -799,7 +777,8 @@ function buildHandpan(){
   });
   $('#hpScale').textContent=RAGAS[S.raga].n;
 }
-function hit(el){el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit');setTimeout(function(){el.classList.remove('hit')},180);}
+function buzz(ms){try{if(navigator.vibrate)navigator.vibrate(ms)}catch(e){}}
+function hit(el){buzz(6);el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit');setTimeout(function(){el.classList.remove('hit')},180);}
 var padNotes=[];
 function buildPad(){
   padNotes=ladder(scale().length*2+1,0); var cols=$('#xyCols'); cols.innerHTML='';
@@ -822,7 +801,7 @@ function bindDjembe(){
   var dj=$('#dj');
   dj.addEventListener('pointerdown',function(e){e.preventDefault();ensure();
     var r=dj.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5,d=Math.sqrt(x*x+y*y)*2;
-    if(d>1.02) return; var k=d<.3?'bass':d<.72?'tone':'slap'; djembe(k);
+    if(d>1.02) return; var k=d<.3?'bass':d<.72?'tone':'slap'; djembe(k); buzz(k==='bass'?12:6);
     var rp_=document.createElement('i');rp_.className='rip';rp_.style.left=(e.clientX-r.left)+'px';rp_.style.top=(e.clientY-r.top)+'px';
     rp_.style.transform='translate(-50%,-50%)';dj.appendChild(rp_);setTimeout(function(){rp_.remove()},700);});
 }
@@ -886,10 +865,10 @@ function liveDots(){
 $$('.dock button').forEach(function(b){b.addEventListener('click',function(){ensure();openPanel(b.getAttribute('data-p'))})});
 $$('#layers button').forEach(function(b){var l=b.getAttribute('data-l');b.classList.toggle('on',!!vis[l]);
   b.addEventListener('click',function(){vis[l]=!vis[l];b.classList.toggle('on',vis[l]);
-    if(l==='pres'){store('pres',vis.pres?'1':'0');toast(vis.pres?'\u2726 The ember is listening':'The ember rests');}})});
+    if(l==='pres'){store('pres',vis.pres?'1':'0');toast(vis.pres?'\u2726 The ember is with you':'The ember rests');}})});
 $('#saChip').addEventListener('click',function(){ensure();openPanel('raga')});
 $('#enter').addEventListener('click',function(){
-  ensure(); $('#gate').classList.add('gone'); started=true; t0=performance.now();
+  ensure(); $('#gate').classList.add('gone'); started=true; t0=performance.now(); stayAwake();
   handpan(fq(0,0),.8); setTimeout(function(){handpan(fq(7,0),.6)},420); setTimeout(function(){handpan(fq(0,1),.5)},840);
   openPanel('handpan');
   if(!store('hint2')){store('hint2','1');setTimeout(function(){toast('Touch the plate — it sings. Drag to bend the tone');},2600);}
@@ -951,7 +930,18 @@ document.addEventListener('fullscreenchange',function(){ if(!document.fullscreen
   }
   requestAnimationFrame(tick);
 })();
-document.addEventListener('visibilitychange',function(){if(document.hidden&&ac&&!om.on&&!tan.on&&!tone.on&&!mic.on)ac.suspend();else if(!document.hidden&&ac)ac.resume();});
+var wake=null;
+function stayAwake(){try{if(navigator.wakeLock&&!document.hidden)navigator.wakeLock.request('screen').then(function(w){wake=w}).catch(function(){})}catch(e){}}
+['gesturestart','gesturechange','dblclick'].forEach(function(ev){document.addEventListener(ev,function(e){e.preventDefault()},{passive:false})});
+if(window.matchMedia&&matchMedia('(pointer:coarse)').matches) document.addEventListener('contextmenu',function(e){e.preventDefault()});
+(function(){ // the sheet's handle: tap or swipe down to tuck the panel away
+  var g=$('#grab'),y0=null; if(!g) return;
+  function shut(){var sh=$('#sheet');if(sh.classList.contains('open'))openPanel(sh.getAttribute('data-cur'));}
+  g.addEventListener('click',shut);
+  g.addEventListener('touchstart',function(e){y0=e.touches[0].clientY},{passive:true});
+  g.addEventListener('touchmove',function(e){if(y0!==null&&e.touches[0].clientY-y0>28){y0=null;shut();}},{passive:true});
+})();
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&started)stayAwake();if(document.hidden&&ac&&!om.on&&!tan.on&&!tone.on&&!mic.on)ac.suspend();else if(!document.hidden&&ac)ac.resume();});
 addEventListener('resize',function(){resize();sizeInst();});
 
 buildFreqs(); buildTones(); refreshScale(); bindPad(); bindDjembe(); setOm(136.1); setTone(tone.f,true); cym.f=136.1; cym.amp=0;
