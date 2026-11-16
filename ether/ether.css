@@ -13,7 +13,9 @@
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--cream);font-family:var(--sans);
   font-weight:300;-webkit-font-smoothing:antialiased;overscroll-behavior:none;-webkit-user-select:none;user-select:none}
 button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer}
-#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#cv:active{cursor:grabbing}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 
 /* top */
 .top{position:fixed;top:0;left:0;right:0;z-index:10;height:var(--top);padding:env(safe-area-inset-top) 14px 0;
@@ -38,7 +40,7 @@ button{font-family:inherit;color:inherit;background:none;border:0;cursor:pointer
 
 /* dock */
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:20;height:var(--dock);padding:6px 6px env(safe-area-inset-bottom);
-  display:grid;grid-template-columns:repeat(6,1fr);background:rgba(0,0,0,.86);
+  display:grid;grid-template-columns:repeat(8,1fr);background:rgba(0,0,0,.86);
   backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line)}
 .dock button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--c56);
   font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;border-radius:12px;transition:color .25s,background .25s}
@@ -169,7 +171,7 @@ input[type=checkbox]{accent-color:var(--ember);width:16px;height:16px}
 @media(min-width:900px){
   :root{--sheet:440px}
   .sheet{left:auto;right:20px;bottom:calc(var(--dock) + 14px);width:420px;border-radius:22px;border:1px solid var(--line)}
-  .dock{left:50%;right:auto;transform:translateX(-50%);width:520px;bottom:14px;border-radius:20px;border:1px solid var(--line);padding-bottom:6px;height:66px}
+  .dock{left:50%;right:auto;transform:translateX(-50%);width:680px;bottom:14px;border-radius:20px;border:1px solid var(--line);padding-bottom:6px;height:66px}
   .sheet{bottom:94px}
   .sheet:not(.open){transform:translateX(calc(100% + 40px))}
 }
@@ -234,3 +236,33 @@ body.full .om-btn,body.full .mic-btn{width:150px;height:150px;font-size:76px}
   background:rgba(20,18,15,.95);border:1px solid rgba(208,138,69,.45);color:var(--cream);font-size:12px;padding:10px 14px;border-radius:12px;
   opacity:0;pointer-events:none;transition:all .35s var(--ease);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* dock now carries eight instruments */
+@media(max-width:520px){.dock{padding-left:2px;padding-right:2px}.dock button{font-size:8px;letter-spacing:.03em;gap:3px}.dock svg{width:23px;height:23px}.dock .om-g{font-size:20px}}
+
+/* frequencies */
+.tone{display:flex;gap:16px;align-items:center}
+.tone-btn{width:112px;height:112px;flex-shrink:0;border-radius:50%;border:1px solid var(--line2);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:5px;background:radial-gradient(circle,#1a1510,#0a0908);color:var(--c56);transition:all .4s}
+.tone-btn b{font-family:var(--wide);font-size:21px;font-weight:700;letter-spacing:0;color:var(--cream);line-height:1}
+.tone-btn small{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
+.tone-btn.on{border-color:var(--ember);color:var(--ember-lt);box-shadow:0 0 40px rgba(208,138,69,.35);animation:breathe 7s ease-in-out infinite}
+.tone-btn.on b{color:var(--ember-lt)}
+.tone-ctl{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.sub-lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--c56);flex-shrink:0}
+.tone-row{display:flex;gap:6px}
+.tone-row .pill{flex:1;padding:8px 6px;font-size:10px;white-space:nowrap}
+.tone-row .pill.on{background:var(--glow);color:var(--ember-lt);border-color:var(--ember)}
+.beat-row{display:flex;align-items:center;gap:10px}
+.beat-row .sa-chips button{font-size:11px;padding:6px 10px}
+
+/* listen */
+.mic-btn span{display:block}
+.mic-btn.on{animation:breathe 4s ease-in-out infinite}
+.tuner{position:relative;height:8px;border-radius:4px;background:var(--line);margin:2px 0 10px}
+.tuner::before{content:'';position:absolute;left:50%;top:-3px;width:1px;height:14px;background:var(--c34)}
+.tuner i{position:absolute;left:50%;top:-4px;width:4px;height:16px;margin-left:-2px;border-radius:2px;background:var(--c56);transition:left .14s,background .2s,box-shadow .2s}
+.tuner.ok i{background:var(--ember-lt);box-shadow:0 0 12px var(--ember-lt)}
+.mic-hz{font-size:20px}
+body.full .tone-btn{width:150px;height:150px}body.full .tone-btn b{font-size:28px}
+@media(max-height:640px){.tone-btn{width:92px;height:92px}.tone-btn b{font-size:18px}}

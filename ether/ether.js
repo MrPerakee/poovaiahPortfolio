@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════
    ETHER — a small world of sound
-   Handpan · Synth pad · Djembe · Om · Raga/Tanpura · Loop & record
-   Visuals: Flower of Life · golden-ratio tree · Chladni cymatics
+   Handpan · Synth pad · Djembe · Om · Raga/Tanpura · Frequencies · Listen (microphone) · Loop & record
+   Visuals: a 3D Chladni plate with sand (WebGL) · Flower of Life inlay · golden-ratio tree · the ember that listens
    Everything is synthesised live with the Web Audio API — no samples.
    ═══════════════════════════════════════════ */
 (function(){
@@ -217,25 +217,66 @@ function omSetF(f){om.f=f; var N=om.nodes; if(!N) return; var t=now();
   N.src.frequency.setTargetAtTime(f,t,.1); N.src2.frequency.setTargetAtTime(f,t,.1); N.sub.frequency.setTargetAtTime(f/2,t,.1);
   if(N.bin){N.bin[0].frequency.setTargetAtTime(f,t,.1);N.bin[1].frequency.setTargetAtTime(f+om.beat,t,.1);}}
 
-/* ─────────── CYMATICS (Chladni plate) ───────────
-   Sand settles where the plate is still: cos(nπx)cos(mπy) − cos(mπx)cos(nπy) = 0.
-   Higher frequencies excite higher (n,m) modes. */
-var MODES=[];(function(){for(var n=2;n<=13;n++)for(var m=1;m<n;m++)if((n+m)%2===1||n-m>1)MODES.push([n,m]);
-  MODES.sort(function(a,b){return (a[0]*a[0]+a[1]*a[1])-(b[0]*b[0]+b[1]*b[1])});})();
-var cym={f:136.1,amp:0,n:3,m:1,label:''};
-function modeFor(f){var lo=Math.log2(50),hi=Math.log2(1800),t=(Math.log2(Math.max(50,Math.min(1800,f)))-lo)/(hi-lo);
-  return MODES[Math.round(t*(MODES.length-1))];}
+/* ─────────── CYMATICS — a Chladni plate ───────────
+   A square plate driven at its centre. Mode (n,m) has the shape cos(nπx)cos(mπy) ± cos(mπx)cos(nπy) and its own
+   pitch f ≈ C·(n²+m²) — the plate law (pitch rises with the square of the wave count). A driving tone excites the
+   modes whose pitch lies close to it (a resonance curve), so the figure morphs as the tone moves and the sand
+   dances hardest on resonance. Grains hop where the plate moves and come to rest on the still (nodal) lines. */
+var NMAX=16, PLATE_C=12, GAMMA=.022, MODES=[];
+(function(){for(var n=1;n<=NMAX;n++)for(var m=0;m<=n;m++)MODES.push({n:n,m:m,f:PLATE_C*(n*n+m*m),s:(n-m)%2?-1:1});})();
+var cym={f:136.1,amp:0,n:3,m:1,res:1};
+var G=innerWidth<700?128:176, field=new Float32Array(G*G), cosT=new Float32Array((NMAX+1)*G), fieldKey='';
+(function(){for(var n=0;n<=NMAX;n++)for(var i=0;i<G;i++)cosT[n*G+i]=Math.cos(n*Math.PI*(-1+2*i/(G-1)));})();
+function buildField(comps){ // comps: [[frequency, weight], …] — one for a tone, several for a voice or a room
+  var key=comps.map(function(c){return (Math.round(c[0]*2)/2)+':'+Math.round(c[1]*10)}).join('|');
+  if(key===fieldKey) return; fieldKey=key;
+  var terms=[],i,j,k;
+  comps.forEach(function(c,ci){
+    var f=Math.max(PLATE_C*1.2,Math.min(c[0],PLATE_C*NMAX*NMAX*1.6)), cand=[];
+    for(k=0;k<MODES.length;k++){var md=MODES[k],d=(f-md.f)/(md.f*GAMMA);cand.push([1/(1+d*d),md]);}
+    cand.sort(function(x,y){return y[0]-x[0]});
+    for(k=0;k<3;k++){ if(k&&cand[k][0]<cand[0][0]*.12) break; terms.push([cand[k][0]/cand[0][0]*c[1],cand[k][1]]); }
+    if(ci===0){ cym.n=cand[0][1].n; cym.m=cand[0][1].m; cym.res=Math.sqrt(cand[0][0]); }
+  });
+  for(i=0;i<field.length;i++)field[i]=0;
+  terms.forEach(function(tm){var w=tm[0],n=tm[1].n*G,m=tm[1].m*G,sw=tm[1].s*w;
+    for(j=0;j<G;j++){var yn=cosT[n+j]*sw,ym=cosT[m+j]*w,o=j*G;
+      for(i=0;i<G;i++)field[o+i]+=cosT[n+i]*ym+cosT[m+i]*yn;}});
+  var mx=0;for(i=0;i<field.length;i++){var v=field[i]<0?-field[i]:field[i];field[i]=v;if(v>mx)mx=v;}
+  if(mx>0){mx=1/mx;for(i=0;i<field.length;i++)field[i]*=mx;}
+}
 function pulse(f,a){cym.f=f;cym.amp=Math.max(cym.amp,a);}
+function rp(){var a=Math.random()*TAU,r=Math.sqrt(Math.random());return {x:Math.cos(a)*r,y:Math.sin(a)*r}}
+
+/* sand */
+var NP=innerWidth<700?13000:((navigator.hardwareConcurrency||4)>=8?38000:26000);
+var pos=new Float32Array(NP*3), seed=new Float32Array(NP*2), kicks=[];
+(function(){for(var i=0;i<NP;i++){pos[i*3]=Math.random()*2-1;pos[i*3+1]=Math.random()*2-1;seed[i*2]=Math.random();seed[i*2+1]=Math.random();}})();
+function stepSand(){
+  var a=cym.amp*(.35+.65*cym.res), st=.005+a*.075, hop=a*.085, g1=(G-1)*.5, tn=performance.now(), kk=kicks.length, i,o=0,x,y,z,u,s,q;
+  for(i=0;i<NP;i++,o+=3){
+    x=pos[o]; y=pos[o+1];
+    u=field[(((y+1)*g1+.5)|0)*G+(((x+1)*g1+.5)|0)];
+    s=u*st; x+=(Math.random()-.5)*s; y+=(Math.random()-.5)*s; z=u*hop*Math.random();
+    if(kk) for(q=0;q<kk;q++){ // a strike: a ring of sand leaps outward from the touch
+      var kq=kicks[q],age=(tn-kq.t)/1000,dx=x-kq.x,dy=y-kq.y,d=Math.sqrt(dx*dx+dy*dy),w=1-Math.abs(d-age*1.9)/.13;
+      if(w>0){var e=(1-age/.7)*w; if(e>0){z+=e*.1*(.4+Math.random()*.6);x+=dx/(d+.02)*e*.014;y+=dy/(d+.02)*e*.014;}} }
+    if(x>1||x<-1||y>1||y<-1){x=Math.random()*2-1;y=Math.random()*2-1;}
+    pos[o]=x; pos[o+1]=y; pos[o+2]=z;
+  }
+  if(kk) kicks=kicks.filter(function(k){return tn-k.t<700});
+}
 
 /* ─────────── VISUALS ─────────── */
-var cv=$('#cv'),cx=cv.getContext('2d'),W,H,DPR,P=[],vis={flower:true,tree:true,cym:true},energy=0,t0=performance.now();
+var cv=$('#cv'),cx=cv.getContext('2d'),glc=$('#gl'),W,H,DPR,energy=0,t0=performance.now();
+var vis={flower:true,tree:true,cym:true,pres:store('pres')!=='0'};
 var view={cy:0,h:0,cyT:0,hT:0};
+var cam={yaw:.62,tilt:.9,yawT:.62,tiltT:.9,d:3.4,R:120,cx:0,cy:0,cs:1,sn:0,ct:1,st:0,hold:0};
 function resize(){
   DPR=Math.min(window.devicePixelRatio||1,2); W=innerWidth; H=innerHeight;
-  cv.width=W*DPR; cv.height=H*DPR; cx.setTransform(DPR,0,0,DPR,0,0); layoutView(true);
-  var want=W<700?2200:3600; while(P.length<want)P.push(rp()); P.length=want;
+  cv.width=W*DPR; cv.height=H*DPR; cx.setTransform(DPR,0,0,DPR,0,0);
+  glc.width=W*DPR; glc.height=H*DPR; layoutView(true);
 }
-function rp(){var a=Math.random()*TAU,r=Math.sqrt(Math.random());return {x:Math.cos(a)*r,y:Math.sin(a)*r}}
 function layoutView(snap){
   var top=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--top'))||54;
   var sheetOpen=$('#sheet').classList.contains('open') && W<900;
@@ -243,19 +284,29 @@ function layoutView(snap){
   view.hT=H-top-bottom-30; view.cyT=top+30+view.hT/2;
   if(snap){view.h=view.hT;view.cy=view.cyT;}
 }
-var tree={g:0,seed:Math.random()};
-function drawFlower(t,R){
-  var c=W/2,cy=view.cy, r=R*.5, k=Math.min(1,(t)/14); // reveal over 14s
-  cx.save(); cx.translate(c,cy); cx.rotate(t*.012);
-  cx.strokeStyle='rgba(208,138,69,'+(0.10+energy*.25)+')'; cx.lineWidth=.8;
-  var pts=[[0,0]]; for(var ring=1;ring<=2;ring++)for(var s=0;s<6;s++)for(var j=0;j<ring;j++){
-    var a=s*Math.PI/3, b=(s+2)*Math.PI/3; pts.push([ring*r*Math.cos(a)+j*r*Math.cos(b),ring*r*Math.sin(a)+j*r*Math.sin(b)]);}
-  var show=Math.floor(k*pts.length);
-  for(var i=0;i<show;i++){cx.beginPath();cx.arc(pts[i][0],pts[i][1],r,0,TAU);cx.stroke();}
-  if(show<pts.length&&show>=0){var p=pts[show],fr=(k*pts.length)%1;cx.beginPath();cx.arc(p[0],p[1],r,-Math.PI/2,-Math.PI/2+fr*TAU);cx.stroke();}
-  cx.strokeStyle='rgba(237,235,221,'+(0.06+energy*.1)+')'; cx.beginPath(); cx.arc(0,0,r*3,0,TAU); cx.stroke();
-  cx.restore();
+/* camera: the plate lies in x,y (z is up); we look down at it from a tilt and can orbit */
+function camUpdate(){
+  if(performance.now()-cam.hold>4000) cam.yawT+=.0007;
+  cam.yaw+=(cam.yawT-cam.yaw)*.14; cam.tilt+=(cam.tiltT-cam.tilt)*.14;
+  cam.cs=Math.cos(cam.yaw); cam.sn=Math.sin(cam.yaw); cam.ct=Math.cos(cam.tilt); cam.st=Math.sin(cam.tilt);
+  // size the plate so it fits the free space at any rotation; on wide screens it steps aside for the open panel
+  var side=(W>=900&&$('#sheet').classList.contains('open')&&!document.body.classList.contains('full'))?440:0, availW=W-side-28;
+  var ex=0,up=0,dn=0,i,a,x1,y1,k,r=1.4142;
+  for(i=0;i<16;i++){a=i/16*TAU;x1=Math.cos(a)*r;y1=Math.sin(a)*r;k=cam.d/(cam.d+y1*cam.st);
+    ex=Math.max(ex,Math.abs(x1*k));up=Math.max(up,y1*cam.ct*k);dn=Math.max(dn,-y1*cam.ct*k);}
+  var Rt=Math.max(56,Math.min(availW/2/ex,(view.h+20)/(up+dn+.12)));
+  var cxT=(W-side)/2, cyT=view.cy-view.h/2-10+Math.max(0,(view.h+20-Rt*(up+dn))/2)+Rt*up;
+  if(!cam.R0){cam.R=Rt;cam.cx=cxT;cam.cy=cyT;cam.R0=1;}
+  cam.R+=(Rt-cam.R)*.12; cam.cx+=(cxT-cam.cx)*.12; cam.cy+=(cyT-cam.cy)*.12;
 }
+function proj(x,y,z){var x1=x*cam.cs-y*cam.sn,y1=x*cam.sn+y*cam.cs,k=cam.d/(cam.d+y1*cam.st-z*cam.ct);
+  return [cam.cx+cam.R*x1*k, cam.cy-cam.R*(y1*cam.ct+z*cam.st)*k, k];}
+function unproj(sx,sy){ // screen → point on the plate surface (z=0)
+  var a=(sx-cam.cx)/cam.R,b=-(sy-cam.cy)/cam.R,den=cam.ct*cam.d-b*cam.st; if(den<=0) return null;
+  var y1=b*cam.d/den,k=cam.d/(cam.d+y1*cam.st),x1=a/k;
+  return [x1*cam.cs+y1*cam.sn,-x1*cam.sn+y1*cam.cs];
+}
+var tree={g:0,seed:Math.random()};
 function drawTree(t){
   var g=Math.min(10,t/2.6); tree.g=g; // one generation every ~2.6s
   var baseY=view.cy+view.h/2+30, len=Math.min(view.h*.24,H*.2), sway=.018+energy*.05;
@@ -264,7 +315,7 @@ function drawTree(t){
     var p=Math.max(0,Math.min(1,g-d)); if(p<=0) return;
     var a=ang+Math.sin(t*.7+d*.9+tree.seed*9)*sway*d;
     var x2=x+Math.cos(a)*l*p, y2=y+Math.sin(a)*l*p;
-    cx.strokeStyle='rgba(208,138,69,'+((vis.cym?0.34:0.6)-d*.025)+')'; cx.lineWidth=Math.max(.5,(10-d)*.42);
+    cx.strokeStyle='rgba(208,138,69,'+((vis.cym?0.4:0.6)-d*.025)+')'; cx.lineWidth=Math.max(.5,(10-d)*.42);
     cx.beginPath(); cx.moveTo(x,y); cx.lineTo(x2,y2); cx.stroke();
     if(p<1) return;
     if(d>=9){ // blossom — pulses with the music
@@ -272,40 +323,297 @@ function drawTree(t){
     var th=Math.PI/(4.2+ (d%2)*.6); // golden asymmetry
     br(x2,y2,a-th/PHI,l/PHI,d+1);
     br(x2,y2,a+th,l/PHI*0.94,d+1);
-  })(W/2,baseY,-Math.PI/2,len,0);
+  })(cam.cx||W/2,baseY,-Math.PI/2,len,0);
   cx.restore();
 }
-function drawCym(R){
-  var m=modeFor(cym.f); cym.n=m[0]; cym.m=m[1];
-  var n=cym.n*Math.PI, mm=cym.m*Math.PI, step=.012+cym.amp*.06, c=W/2, cy=view.cy;
-  cx.fillStyle='rgba(237,235,221,.82)';
-  for(var i=0;i<P.length;i++){
-    var p=P[i], v=Math.cos(n*p.x)*Math.cos(mm*p.y)-Math.cos(mm*p.x)*Math.cos(n*p.y), s=Math.abs(v)*step;
-    p.x+=(Math.random()-.5)*s; p.y+=(Math.random()-.5)*s;
-    if(p.x*p.x+p.y*p.y>1){var q=rp();p.x=q.x;p.y=q.y;}
-    cx.fillRect(c+p.x*R,cy+p.y*R,1.25,1.25);
-  }
-  cx.strokeStyle='rgba(237,235,221,'+(0.12+cym.amp*.4)+')'; cx.lineWidth=1;
-  cx.beginPath(); cx.arc(c,cy,R+6,0,TAU); cx.stroke();
+function quad(z){return [proj(-1,-1,z),proj(1,-1,z),proj(1,1,z),proj(-1,1,z)];}
+function trace(q){cx.beginPath();cx.moveTo(q[0][0],q[0][1]);for(var i=1;i<q.length;i++)cx.lineTo(q[i][0],q[i][1]);cx.closePath();}
+function drawPlate(){ // a slab of dark glass, lit from beneath and by the ember above it
+  var top=quad(0),bot=quad(-.06),c=proj(0,0,-.2),R=cam.R,i,g;
+  g=cx.createRadialGradient(c[0],c[1]+R*.1,R*.2,c[0],c[1]+R*.1,R*1.6);
+  g.addColorStop(0,'rgba(208,138,69,'+(.08+energy*.1)+')'); g.addColorStop(1,'rgba(208,138,69,0)');
+  cx.fillStyle=g; cx.fillRect(c[0]-R*2,c[1]-R*2,R*4,R*4);
+  trace(bot); cx.fillStyle='#050403'; cx.fill();
+  for(i=0;i<4;i++){var j=(i+1)%4; trace([top[i],top[j],bot[j],bot[i]]); cx.fillStyle='#0d0b09'; cx.fill();
+    cx.strokeStyle='rgba(208,138,69,.22)'; cx.lineWidth=1; cx.stroke();}
+  var y0=Math.max(top[0][1],top[1][1],top[2][1],top[3][1]), y1=Math.min(top[0][1],top[1][1],top[2][1],top[3][1]);
+  g=cx.createLinearGradient(0,y0,0,y1); g.addColorStop(0,'rgba(34,29,23,.9)'); g.addColorStop(1,'rgba(10,9,8,.84)');
+  trace(top); cx.fillStyle=g; cx.fill();
+  if(vis.pres){ var l=proj(pres.x,pres.y,0), lr=R*(.5+pres.glow*.25);
+    cx.save(); trace(top); cx.clip();
+    g=cx.createRadialGradient(l[0],l[1],0,l[0],l[1],lr); g.addColorStop(0,'rgba(239,160,89,'+Math.min(.34,.1+pres.glow*.12)+')'); g.addColorStop(1,'rgba(239,160,89,0)');
+    cx.fillStyle=g; cx.fillRect(l[0]-lr,l[1]-lr,lr*2,lr*2); cx.restore(); }
+  trace(top); cx.strokeStyle='rgba(237,235,221,'+(.2+cym.amp*.35)+')'; cx.lineWidth=1; cx.stroke();
 }
-var lastRO=0;
+function drawFlower(t){ // Flower of Life, inlaid in the plate
+  var r=1/3, k=Math.max(0,Math.min(1,t/14)), SEG=44, a, i, q; // reveal over 14s
+  var pts=[[0,0]]; for(var ring=1;ring<=2;ring++)for(var s=0;s<6;s++)for(var j=0;j<ring;j++){
+    a=s*Math.PI/3; var b=(s+2)*Math.PI/3; pts.push([ring*r*Math.cos(a)+j*r*Math.cos(b),ring*r*Math.sin(a)+j*r*Math.sin(b)]);}
+  function arc(px,py,rad,frac){cx.beginPath();var n=Math.max(2,Math.round(SEG*frac));
+    for(i=0;i<=n;i++){a=-Math.PI/2+i/SEG*TAU;q=proj(px+Math.cos(a)*rad,py+Math.sin(a)*rad,0);if(i)cx.lineTo(q[0],q[1]);else cx.moveTo(q[0],q[1]);}cx.stroke();}
+  cx.strokeStyle='rgba(208,138,69,'+(0.13+energy*.25)+')'; cx.lineWidth=.8;
+  var show=Math.floor(k*pts.length);
+  for(var c=0;c<show;c++)arc(pts[c][0],pts[c][1],r,1);
+  if(show<pts.length)arc(pts[show][0],pts[show][1],r,(k*pts.length)%1);
+  cx.strokeStyle='rgba(237,235,221,'+(0.07+energy*.1)+')'; arc(0,0,1,1);
+}
+
+/* WebGL — every grain is a small lit sphere with its own shadow */
+var gl=null,prog,U={},posBuf,seedBuf,emberBuf,emberPos=new Float32Array(3);
+function initGL(){
+  try{gl=glc.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false})||glc.getContext('experimental-webgl');}catch(e){gl=null}
+  if(!gl) return;
+  var VS='attribute vec3 aPos;attribute vec2 aSeed;uniform vec2 uView;uniform vec3 uCam;uniform vec4 uRot;uniform vec3 uLight;'+
+    'uniform float uD,uDpr,uSize,uMode,uGlow,uLit;varying vec3 vCol;varying float vSp;'+
+    'void main(){vec3 p=aPos;'+
+    'if(uMode>.5&&uMode<1.5){p.xy+=(p.xy-uLight.xy)*(p.z+.012)/max(.2,uLight.z)*.7+vec2(.005,-.005);p.z=0.;}'+
+    'float x1=p.x*uRot.x-p.y*uRot.y,y1=p.x*uRot.y+p.y*uRot.x;'+
+    'float k=uD/(uD+y1*uRot.w-p.z*uRot.z);'+
+    'gl_Position=vec4((uCam.x+uCam.z*x1*k)/uView.x*2.-1.,1.-(uCam.y-uCam.z*(y1*uRot.z+p.z*uRot.w)*k)/uView.y*2.,0.,1.);'+
+    'float sz=uSize*k*uDpr;vSp=0.;'+
+    'if(uMode>1.5){gl_PointSize=sz*uGlow;vCol=vec3(1.,.64,.32);}else{'+
+    'gl_PointSize=max(1.,sz*(.72+.6*aSeed.y)*(uMode>.5?1.4:1.));'+
+    'vec3 L=uLight-aPos;float lit=uLit/(1.+dot(L,L)*5.);'+
+    'vec3 base=mix(vec3(.96,.93,.85),vec3(.80,.57,.32),aSeed.x*aSeed.x);'+
+    'vCol=base*(.6+aPos.z*5.)+vec3(1.,.56,.24)*lit;vSp=step(.93,aSeed.y);}}';
+  var FS='precision mediump float;varying vec3 vCol;varying float vSp;uniform float uMode;'+
+    'void main(){vec2 q=gl_PointCoord*2.-1.;float r2=dot(q,q);if(r2>1.)discard;'+
+    'if(uMode>1.5){float g=exp(-r2*5.);gl_FragColor=vec4(vCol*g*g*1.3+vec3(1.,.95,.85)*exp(-r2*70.),0.);return;}'+
+    'if(uMode>.5){gl_FragColor=vec4(0.,0.,0.,.45*(1.-r2));return;}'+
+    'float diff=max(0.,dot(vec3(q.x,-q.y,sqrt(1.-r2)),vec3(-.42,.52,.74)));'+
+    'vec3 c=vCol*(.36+.82*diff)+vSp*pow(diff,24.)*.9;float a=smoothstep(1.,.5,r2);gl_FragColor=vec4(c*a,a);}';
+  function sh(type,src){var o=gl.createShader(type);gl.shaderSource(o,src);gl.compileShader(o);
+    if(!gl.getShaderParameter(o,gl.COMPILE_STATUS)){console.warn('ether shader',gl.getShaderInfoLog(o));return null;}return o;}
+  var v=sh(gl.VERTEX_SHADER,VS),f=sh(gl.FRAGMENT_SHADER,FS); if(!v||!f){gl=null;return;}
+  prog=gl.createProgram(); gl.attachShader(prog,v); gl.attachShader(prog,f);
+  gl.bindAttribLocation(prog,0,'aPos'); gl.bindAttribLocation(prog,1,'aSeed'); gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){gl=null;return;}
+  ['uView','uCam','uRot','uLight','uD','uDpr','uSize','uMode','uGlow','uLit'].forEach(function(n){U[n]=gl.getUniformLocation(prog,n)});
+  posBuf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,posBuf); gl.bufferData(gl.ARRAY_BUFFER,pos,gl.DYNAMIC_DRAW);
+  seedBuf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,seedBuf); gl.bufferData(gl.ARRAY_BUFFER,seed,gl.STATIC_DRAW);
+  emberBuf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,emberBuf); gl.bufferData(gl.ARRAY_BUFFER,emberPos,gl.DYNAMIC_DRAW);
+  gl.enable(gl.BLEND); gl.clearColor(0,0,0,0);
+}
+function drawGL(){
+  gl.viewport(0,0,glc.width,glc.height); gl.clear(gl.COLOR_BUFFER_BIT);
+  if(!vis.cym&&!vis.pres) return;
+  gl.useProgram(prog);
+  gl.uniform2f(U.uView,W,H); gl.uniform3f(U.uCam,cam.cx,cam.cy,cam.R); gl.uniform4f(U.uRot,cam.cs,cam.sn,cam.ct,cam.st);
+  gl.uniform3f(U.uLight,pres.x,pres.y,pres.z); gl.uniform1f(U.uD,cam.d); gl.uniform1f(U.uDpr,DPR);
+  gl.uniform1f(U.uSize,Math.max(1.25,cam.R/135)); gl.uniform1f(U.uLit,vis.pres?.35+pres.glow*.6:0); gl.uniform1f(U.uGlow,1);
+  gl.enableVertexAttribArray(0);
+  if(vis.cym){
+    gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+    gl.bindBuffer(gl.ARRAY_BUFFER,posBuf); gl.bufferSubData(gl.ARRAY_BUFFER,0,pos); gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
+    gl.bindBuffer(gl.ARRAY_BUFFER,seedBuf); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1,2,gl.FLOAT,false,0,0);
+    gl.uniform1f(U.uMode,1); gl.drawArrays(gl.POINTS,0,NP);   // shadows first
+    gl.uniform1f(U.uMode,0); gl.drawArrays(gl.POINTS,0,NP);   // then the grains
+  }
+  if(vis.pres){
+    emberPos[0]=pres.x; emberPos[1]=pres.y; emberPos[2]=pres.z;
+    gl.bindBuffer(gl.ARRAY_BUFFER,emberBuf); gl.bufferSubData(gl.ARRAY_BUFFER,0,emberPos); gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
+    gl.disableVertexAttribArray(1); gl.vertexAttrib2f(1,0,1);
+    gl.blendFunc(gl.ONE,gl.ONE); gl.uniform1f(U.uMode,2); gl.uniform1f(U.uGlow,16+pres.glow*12); gl.drawArrays(gl.POINTS,0,1);
+  }
+}
+function drawSand2D(){ // fallback when WebGL is unavailable
+  cx.fillStyle='rgba(237,225,200,.85)'; var n=Math.min(NP,9000),i,q;
+  for(i=0;i<n;i++){q=proj(pos[i*3],pos[i*3+1],pos[i*3+2]);cx.fillRect(q[0],q[1],1.3,1.3);}
+  if(vis.pres){q=proj(pres.x,pres.y,pres.z);var g=cx.createRadialGradient(q[0],q[1],0,q[0],q[1],26);
+    g.addColorStop(0,'rgba(255,200,140,.9)');g.addColorStop(1,'rgba(239,160,89,0)');cx.fillStyle=g;cx.fillRect(q[0]-26,q[1]-26,52,52);}
+}
+var lastRO=0,lastField=0;
 function frame(ts){
   var t=(ts-t0)/1000;
   view.h+=(view.hT-view.h)*.12; view.cy+=(view.cyT-view.cy)*.12;
   if(an){an.getFloatTimeDomainData(anBuf);var s=0;for(var i=0;i<anBuf.length;i+=4)s+=anBuf[i]*anBuf[i];
     energy+=(Math.min(1,Math.sqrt(s/(anBuf.length/4))*4)-energy)*.2;}
   cym.amp*=.985;
-  if(om.on){ if(cym.amp<.4) cym.f=om.f; cym.amp=Math.max(cym.amp,.35); }
+  var comps=null;
+  if(mic.on) comps=micTick(ts);
+  if(!comps){
+    if(tone.on){ toneSweep(); if(cym.amp<.5) cym.f=tone.f; cym.amp=Math.max(cym.amp,.5); }
+    else if(om.on){ if(cym.amp<.4) cym.f=om.f; cym.amp=Math.max(cym.amp,.35); }
+    comps=[[cym.f,1]];
+  }
+  if(ts-lastField>45){lastField=ts;buildField(comps);}
+  camUpdate(); presTick(t,ts);
   cx.fillStyle='rgba(0,0,0,.34)'; cx.fillRect(0,0,W,H); // soft trails
-  var R=Math.max(60,Math.min(W*.4,view.h*.42));
-  if(vis.flower) drawFlower(t,R);
   if(vis.tree) drawTree(t);
-  if(vis.cym) drawCym(R);
+  if(vis.cym){ drawPlate(); stepSand(); }
+  if(vis.flower) drawFlower(t);
+  if(gl) drawGL(); else if(vis.cym) drawSand2D();
   if(ts-lastRO>120){lastRO=ts;var sw=swaraOf(cym.f);
     $('#roHz').textContent=cym.f.toFixed(1)+' Hz'; $('#roSw').textContent=sw.name+(sw.cents?(sw.cents>0?' +':' ')+sw.cents+'¢':'');
-    $('#roMode').textContent='mode '+cym.n+':'+cym.m;}
+    $('#roMode').textContent='mode '+cym.n+':'+cym.m;
+    $('#toneInfo').textContent=(tone.on?'resonance '+Math.round(cym.res*100)+'% · ':'')+'mode '+cym.n+':'+cym.m;}
   requestAnimationFrame(frame);
 }
+
+/* ─────────── FREQUENCIES — a pure tone for the plate ───────────
+   Associations are the ones tradition gives these numbers; they are offered as sound, not as claims. */
+var TONES=[['432',432,'Calm · warm pitch'],['528',528,'Uplift · Solfeggio Mi'],['639',639,'Connection · Fa'],['396',396,'Release · Ut'],
+  ['417',417,'Change · Re'],['741',741,'Clarity · Sol'],['852',852,'Intuition · La'],['963',963,'Openness'],
+  ['174',174,'Ease · grounding'],['285',285,'Restore'],['136.1',136.1,'Om · Earth year'],['40',40,'Gamma · focus 🎧']];
+var BEATS=[['Off',0],['Theta · 6',6],['Earth · 7.83',7.83],['Alpha · 10',10],['Gamma · 40',40]];
+var tone={on:false,f:Math.max(20,Math.min(2000,+(store('tone')||432))),beat:0,nodes:null,sweep:0,last:0};
+function toneGain(f){return .2*Math.min(1,Math.pow(420/Math.max(420,f),.55));}
+function toneStart(){
+  var t=now(),N={o:[]}; N.g=ac.createGain(); N.g.gain.setValueAtTime(0,t); N.g.gain.linearRampToValueAtTime(toneGain(tone.f),t+.7);
+  function osc(f,type,gain,pan){var o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.value=gain;o.connect(g);
+    if(pan&&ac.createStereoPanner){var pn=ac.createStereoPanner();pn.pan.value=pan;g.connect(pn);pn.connect(N.g);}else g.connect(N.g);
+    o.start(t);N.o.push(o);return o;}
+  if(tone.beat){ N.a=osc(tone.f,'sine',1,-1); N.b=osc(tone.f+tone.beat,'sine',1,1); N.g.connect(master); } // each ear its own tone
+  else{ N.a=osc(tone.f,'sine',1,0); N.h=osc(tone.f*2,'sine',.1,0); N.g.connect(bus); }
+  tone.nodes=N; tone.on=true;
+}
+function toneStop(){var N=tone.nodes; tone.on=false; tone.sweep=0; if(!N) return; var t=now();
+  N.g.gain.cancelScheduledValues(t); N.g.gain.setValueAtTime(N.g.gain.value,t); N.g.gain.linearRampToValueAtTime(0,t+.5);
+  N.o.forEach(function(o){try{o.stop(t+.6)}catch(e){}}); tone.nodes=null;}
+function setTone(f,quiet){
+  f=Math.max(20,Math.min(2000,f)); tone.f=f; store('tone',f);
+  $('#toneHz').textContent=f>=100?(Math.round(f*10)/10).toString():f.toFixed(1);
+  $('#toneF').value=Math.round(Math.log(f/20)/Math.log(100)*1000);
+  $$('#toneFreqs button').forEach(function(b){b.classList.toggle('on',Math.abs(+b.getAttribute('data-f')-f)<.05)});
+  var N=tone.nodes; if(N){var t=now(); N.a.frequency.setTargetAtTime(f,t,.04); if(N.h)N.h.frequency.setTargetAtTime(f*2,t,.04);
+    if(N.b)N.b.frequency.setTargetAtTime(f+tone.beat,t,.04); N.g.gain.setTargetAtTime(toneGain(f),t,.1);}
+  if(!quiet){cym.f=f;cym.amp=Math.max(cym.amp,.7);}
+}
+function toneToggle(){ensure(); if(tone.on) toneStop(); else{toneStart();pulse(tone.f,.9);} toneUI();}
+function toneUI(){$('#toneBtn').classList.toggle('on',tone.on);$('#toneState').textContent=tone.on?'Hz · playing':'Hz · tap to play';
+  $('#toneSweep').classList.toggle('on',!!tone.sweep);liveDots();}
+function toneSweep(){ // a slow glide through the plate's modes — one octave every eight seconds
+  var n=performance.now(),dt=Math.min(.1,(n-tone.last)/1000); tone.last=n; if(!tone.sweep) return;
+  var f=tone.f*Math.pow(2,tone.sweep*dt/8); if(f>1600){f=1600;tone.sweep=-1;} if(f<60){f=60;tone.sweep=1;}
+  setTone(f,true); cym.f=f;
+}
+
+/* ─────────── LISTEN — the microphone drives the plate ───────────
+   Nothing is recorded or sent: the sound is analysed in the page and discarded. The strongest partials of what the
+   room hears each excite their own plate modes, so a voice, a bowl or a clap all draw different figures. */
+var mic={on:false,stream:null,src:null,an:null,tbuf:null,fbuf:null,dec:null,f:0,lvl:0,comps:null,last:0,hold:0};
+function micMsg(m){$('#micMsg').textContent=m;}
+function micToggle(){
+  ensure(); if(mic.on){micStop();return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){micMsg('This browser cannot open the microphone.');return;}
+  micMsg('Waiting for permission…');
+  try{ if(navigator.audioSession) navigator.audioSession.type='play-and-record'; }catch(e){}
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}).then(function(st){
+    mic.stream=st; mic.src=ac.createMediaStreamSource(st); mic.an=ac.createAnalyser(); mic.an.fftSize=4096; mic.an.smoothingTimeConstant=.55;
+    mic.src.connect(mic.an);                       // analysed only — never sent to the speakers
+    mic.tbuf=new Float32Array(mic.an.fftSize); mic.fbuf=new Float32Array(mic.an.frequencyBinCount); mic.dec=new Float32Array(1024);
+    mic.on=true; mic.comps=null; $('#micBtn').classList.add('on'); $('#micLbl').textContent='Listening';
+    micMsg('Hum, sing, clap or play something — the sand follows. Nothing is recorded.'); liveDots();
+  }).catch(function(err){
+    try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(e){}
+    micMsg(err&&(err.name==='NotAllowedError'||err.name==='SecurityError')?'The microphone is blocked. Allow it for this site in your browser settings, then tap again.':
+      err&&err.name==='NotFoundError'?'No microphone was found on this device.':'The microphone could not be opened. Please try again.');
+  });
+}
+function micStop(){
+  if(mic.stream) mic.stream.getTracks().forEach(function(t){t.stop()}); try{mic.src.disconnect()}catch(e){}
+  try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(e){}
+  mic.on=false; mic.stream=mic.src=mic.an=null; $('#micBtn').classList.remove('on'); $('#micLbl').textContent='Listen';
+  $('#micHz').textContent='—'; $('#micNote').textContent='Tap to begin'; $('#micLvl').style.width='0'; $('#micNeedle').style.left='50%'; $('#tuner').classList.remove('ok');
+  micMsg('Tap the circle and allow the microphone. Sound never leaves your device.'); liveDots();
+}
+function pitchOf(buf,sr){ // autocorrelation — the first strong repeat is the fundamental
+  var n=buf.length,r0=0,i,L,minL=Math.max(2,Math.floor(sr/1100)),maxL=Math.min((n>>1)-2,Math.floor(sr/55));
+  for(i=0;i<n;i++)r0+=buf[i]*buf[i]; if(r0<1e-7) return 0;
+  var c=new Float32Array(maxL+2),best=-1,bv=0;
+  for(L=minL-1;L<=maxL+1;L++){var s=0,m=n-L;for(i=0;i<m;i++)s+=buf[i]*buf[i+L];c[L]=s/r0*n/m;}
+  for(L=minL;L<=maxL;L++){ if(c[L]>.8&&c[L]>=c[L-1]&&c[L]>c[L+1]){best=L;break;} }
+  if(best<0){ for(L=minL;L<=maxL;L++) if(c[L]>bv&&c[L]>=c[L-1]&&c[L]>c[L+1]){bv=c[L];best=L;} if(bv<.55) return 0; }
+  var a=c[best-1],b=c[best],d=c[best+1],den=a-2*b+d;
+  return sr/(best+(den?(.5*(a-d)/den):0));
+}
+function micTick(ts){
+  if(ts-mic.last<60) return mic.comps; mic.last=ts;
+  var an_=mic.an,tb=mic.tbuf,fb=mic.fbuf,i,s=0,sr=ac.sampleRate;
+  an_.getFloatTimeDomainData(tb); for(i=0;i<tb.length;i+=2)s+=tb[i]*tb[i];
+  var rms=Math.sqrt(s/(tb.length/2)); mic.lvl+=(Math.min(1,rms*9)-mic.lvl)*.4;
+  $('#micLvl').style.width=Math.round(mic.lvl*100)+'%';
+  if(rms<.006){ mic.hold++; if(mic.hold>6){$('#micNote').textContent='Listening…';$('#tuner').classList.remove('ok');} return mic.comps; }   // quiet: the figure rests
+  mic.hold=0;
+  an_.getFloatFrequencyData(fb);
+  var bin=sr/an_.fftSize,lo=Math.ceil(45/bin),hi=Math.min(fb.length-2,Math.floor(2400/bin)),mx=-200,peaks=[];
+  for(i=lo;i<=hi;i++) if(fb[i]>mx) mx=fb[i];
+  for(i=lo;i<=hi;i++) if(fb[i]>mx-22&&fb[i]>fb[i-1]&&fb[i]>=fb[i+1]){
+    var a=fb[i-1],b=fb[i],d=fb[i+1],den=a-2*b+d; peaks.push([(i+(den?.5*(a-d)/den:0))*bin,Math.pow(10,(b-mx)/20)]); }
+  peaks.sort(function(x,y){return y[1]-x[1]}); peaks=peaks.slice(0,4);
+  for(i=0;i<1024;i++)mic.dec[i]=(tb[i*2]+tb[i*2+1])*.5;
+  var f=pitchOf(mic.dec,sr/2);
+  if(f>0){ mic.f=mic.f&&Math.abs(Math.log2(f/mic.f))<.03?mic.f+(f-mic.f)*.5:f;
+    // the sung fundamental leads the figure; its partials colour it
+    var out=[[mic.f,1]]; peaks.forEach(function(p){ if(Math.abs(Math.log2(p[0]/mic.f))>.06&&p[1]>.25) out.push([p[0],p[1]*.5]); });
+    mic.comps=out.slice(0,4);
+    var sw=swaraOf(mic.f),ok=Math.abs(sw.cents)<=12&&scale().indexOf(SW.indexOf(sw.name))>=0;
+    $('#micHz').textContent=mic.f.toFixed(1)+' Hz';
+    $('#micNote').textContent=sw.name+' '+(sw.cents>0?'+':'')+sw.cents+'¢ · '+westOf(mic.f)+(ok?' · in tune with '+RAGAS[S.raga].n:'');
+    $('#micNeedle').style.left=(50+Math.max(-50,Math.min(50,sw.cents)))+'%'; $('#tuner').classList.toggle('ok',ok);
+    if(ok) pres.flash=Math.max(pres.flash,.7);
+    cym.f=mic.f;
+  }else if(peaks.length){ mic.comps=peaks; cym.f=peaks[0][0]; $('#micHz').textContent=Math.round(peaks[0][0])+' Hz'; $('#micNote').textContent='Texture — no single pitch'; $('#tuner').classList.remove('ok'); }
+  cym.amp=Math.max(cym.amp,Math.min(1,.25+mic.lvl));
+  return mic.comps;
+}
+
+/* ─────────── THE EMBER — a presence that listens ───────────
+   One small light lives above the plate. It breathes, lights the sand beneath it, follows your hand, brightens when
+   you are in tune — and when you play a phrase and pause, it plays it back an octave higher and comes home to Sa. */
+var pres={x:.3,y:.2,z:.42,glow:.4,flash:0,tx:0,ty:0,follow:0,phrase:[],timer:0,busy:false,out:null};
+function presTick(t,ts){
+  var tx,ty;
+  if(ts-pres.follow<3500){tx=pres.tx;ty=pres.ty;}else{tx=.58*Math.cos(t*.23);ty=.58*Math.sin(t*.31+1);}
+  pres.x+=(tx-pres.x)*.06; pres.y+=(ty-pres.y)*.06;
+  var br=.5+.5*Math.sin(t*TAU/om.breath-Math.PI/2);            // one swell per breath
+  pres.z=.36+.07*br+pres.flash*.05; pres.flash*=.94;
+  pres.glow+=((.3+.3*br+energy*.9+pres.flash)-pres.glow)*.2;
+}
+function presOut(){ if(pres.out) return pres.out;
+  var g=ac.createGain(),d=ac.createDelay(1),fb=ac.createGain(); d.delayTime.value=.31; fb.gain.value=.36;
+  g.connect(master); g.connect(d); d.connect(fb); fb.connect(d); d.connect(master); return pres.out=g; } // straight to the speakers, so loops never capture it
+function bell(f,at){
+  [[1,.13,1.9],[2.01,.045,1.1],[3.02,.015,.6]].forEach(function(p){var o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f*p[0];
+    env(g,at,.012,p[1],p[2]);o.connect(g);g.connect(presOut());o.start(at);o.stop(at+p[2]+.1);});
+}
+function heard(f){ // something the visitor played
+  if(!vis.pres||pres.busy||!started) return;
+  pres.flash=Math.max(pres.flash,.5); pres.phrase.push([f,performance.now()]); if(pres.phrase.length>8) pres.phrase.shift();
+  clearTimeout(pres.timer); pres.timer=setTimeout(answer,1600);
+}
+function answer(){
+  var ph=pres.phrase; pres.phrase=[];
+  if(ph.length<2||loop.rec||!vis.pres||!ac) return;
+  pres.busy=true; var at=0,t=now()+.08,seq=[];
+  ph.forEach(function(n,i){ if(i) at+=Math.max(.16,Math.min(.6,(n[1]-ph[i-1][1])/1000)); seq.push([n[0]*2,at]); });
+  var last=seq[seq.length-1][0], home=Sa()*Math.pow(2,Math.round(Math.log2(last/Sa())));
+  if(Math.abs(1200*Math.log2(last/home))>30) seq.push([home,at+=.5]);                                  // come home to Sa
+  seq.forEach(function(n){ bell(n[0],t+n[1]); setTimeout(function(){pres.flash=1;pulse(n[0],.55);},n[1]*1000+80); });
+  setTimeout(function(){pres.busy=false},(at+.9)*1000);
+  if(!store('answered')){store('answered','1');toast('✦ The ember answers — play, pause, and listen');}
+}
+function strike(x,y){ // a tap on the plate
+  ensure(); kicks.push({x:x,y:y,t:performance.now()}); if(kicks.length>4) kicks.shift();
+  pres.tx=x; pres.ty=y; pres.follow=performance.now(); pres.flash=1;
+  var f=cym.f; while(f<180)f*=2; while(f>900)f/=2;
+  var t=now(); [[1,.3,1.2],[2.76,.07,.35],[5.4,.03,.15]].forEach(function(p){var o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f*p[0];
+    env(g,t,.003,p[1],p[2]);o.connect(g);g.connect(bus);o.start(t);o.stop(t+p[2]+.1);});
+  cym.amp=Math.max(cym.amp,.9);
+}
+(function(){ // drag to turn the plate · tap to strike it · the ember follows a hovering hand
+  var ptr=null;
+  function onPlate(e){var q=unproj(e.clientX,e.clientY);return q&&Math.abs(q[0])<=1&&Math.abs(q[1])<=1?q:null;}
+  cv.addEventListener('pointerdown',function(e){ptr={id:e.pointerId,x:e.clientX,y:e.clientY,yaw:cam.yawT,tilt:cam.tiltT,moved:false};
+    try{cv.setPointerCapture(e.pointerId)}catch(err){}});
+  cv.addEventListener('pointermove',function(e){
+    if(ptr&&ptr.id===e.pointerId){var dx=e.clientX-ptr.x,dy=e.clientY-ptr.y; if(Math.abs(dx)+Math.abs(dy)>7) ptr.moved=true;
+      if(ptr.moved){cam.yawT=ptr.yaw+dx*.008;cam.tiltT=Math.max(.15,Math.min(1.28,ptr.tilt-dy*.006));cam.hold=performance.now();}}
+    else if(e.pointerType==='mouse'){var q=onPlate(e); if(q){pres.tx=q[0];pres.ty=q[1];pres.follow=performance.now();}}
+  });
+  function up(e){ if(!ptr||ptr.id!==e.pointerId) return; var q=!ptr.moved&&started&&vis.cym?onPlate(e):null; ptr=null; if(q) strike(q[0],q[1]); }
+  cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',function(){ptr=null});
+})();
 
 /* ─────────── LOOP & RECORD ───────────
    Session: records everything you hear, then saves it to the phone as a WAV.
@@ -438,7 +746,7 @@ function buildHandpan(){
     if(i===0){b.className='ding';b.style.left='50%';b.style.top='50%';b.style.width=b.style.height='30%';}
     else{var a=ANG[i-1]*Math.PI/180;
       b.style.left=(50+Math.cos(a)*35)+'%';b.style.top=(50+Math.sin(a)*35)+'%';b.style.width=b.style.height='21%';}
-    b.addEventListener('pointerdown',function(e){e.preventDefault();ensure();handpan(nt.f,1);hit(b);});
+    b.addEventListener('pointerdown',function(e){e.preventDefault();ensure();handpan(nt.f,1);heard(nt.f);hit(b);});
     hp.appendChild(b);
   });
   $('#hpScale').textContent=RAGAS[S.raga].n;
@@ -455,7 +763,7 @@ function bindPad(){
     x=Math.max(0,Math.min(.999,x));y=Math.max(0,Math.min(1,y));
     return {nt:padNotes[Math.floor(x*padNotes.length)],bright:200*Math.pow(30,1-y),px:e.clientX-r.left,py:e.clientY-r.top};}
   xy.addEventListener('pointerdown',function(e){e.preventDefault();ensure();xy.setPointerCapture(e.pointerId);
-    var a=at(e);padOn(e.pointerId,a.nt.f,a.bright);var d=document.createElement('div');d.className='dot';xy.appendChild(d);dots[e.pointerId]=d;
+    var a=at(e);padOn(e.pointerId,a.nt.f,a.bright);heard(a.nt.f);var d=document.createElement('div');d.className='dot';xy.appendChild(d);dots[e.pointerId]=d;
     d.style.left=a.px+'px';d.style.top=a.py+'px';});
   xy.addEventListener('pointermove',function(e){if(!dots[e.pointerId])return;var a=at(e);padMove(e.pointerId,a.nt.f,a.bright);
     dots[e.pointerId].style.left=a.px+'px';dots[e.pointerId].style.top=a.py+'px';});
@@ -476,7 +784,7 @@ function buildRaga(){
     if(i===S.raga)b.className='on';b.onclick=function(){S.raga=i;store('raga',i);refreshScale();};box.appendChild(b);});
   var sw=$('#swaras'); sw.innerHTML='';
   ladder(scale().length+1,0).forEach(function(nt,i){var b=document.createElement('button');b.textContent=nt.name+(nt.oct>0?'̇':'');
-    b.addEventListener('pointerdown',function(e){e.preventDefault();ensure();handpan(nt.f,.9);hit(b);});sw.appendChild(b);});
+    b.addEventListener('pointerdown',function(e){e.preventDefault();ensure();handpan(nt.f,.9);heard(nt.f);hit(b);});sw.appendChild(b);});
   $('#ragaInfo').textContent=RAGAS[S.raga].m;
 }
 function buildSa(){
@@ -490,6 +798,16 @@ function buildFreqs(){
   var box=$('#freqs');
   FREQS.forEach(function(p){var b=document.createElement('button');b.innerHTML='<b>'+p[0]+' Hz</b><small>'+p[2]+'</small>';
     b.onclick=function(){$$('#freqs button').forEach(function(x){x.classList.remove('on')});b.classList.add('on');setOm(p[1]);};box.appendChild(b);});
+}
+function buildTones(){
+  var box=$('#toneFreqs');
+  var sa=document.createElement('button'); sa.innerHTML='<b>Sa</b><small>Your tonic</small>'; sa.onclick=function(){ensure();setTone(Sa()*2);if(!tone.on)toneToggle();}; box.appendChild(sa);
+  TONES.forEach(function(p){var b=document.createElement('button');b.setAttribute('data-f',p[1]);b.innerHTML='<b>'+p[0]+' Hz</b><small>'+p[2]+'</small>';
+    b.onclick=function(){ensure();tone.sweep=0;setTone(p[1]);if(!tone.on)toneToggle();else toneUI();};box.appendChild(b);});
+  var bb=$('#beats');
+  BEATS.forEach(function(p,i){var b=document.createElement('button');b.textContent=p[0];if(!i)b.className='on';
+    b.onclick=function(){ensure();tone.beat=p[1];$$('#beats button').forEach(function(x){x.classList.toggle('on',x===b)});
+      if(tone.on){toneStop();toneStart();toneUI();} if(p[1])toast('Each ear hears its own tone — use headphones');};bb.appendChild(b);});
 }
 function setOm(f){om.f=f;$('#omF').value=Math.round(Math.log(f/40)/Math.log(1000/40)*1000);$('#omHz').textContent=f.toFixed(1)+' Hz';omSetF(f);cym.f=f;cym.amp=Math.max(cym.amp,.5);}
 
@@ -514,15 +832,26 @@ function liveDots(){
   $('.dock [data-p=om]').classList.toggle('live',om.on);
   $('.dock [data-p=raga]').classList.toggle('live',tan.on);
   $('.dock [data-p=loop]').classList.toggle('live',sess.on||loop.rec||loop.layers.length>0);
+  $('.dock [data-p=tone]').classList.toggle('live',tone.on);
+  $('.dock [data-p=mic]').classList.toggle('live',mic.on);
 }
 $$('.dock button').forEach(function(b){b.addEventListener('click',function(){ensure();openPanel(b.getAttribute('data-p'))})});
-$$('#layers button').forEach(function(b){b.addEventListener('click',function(){var l=b.getAttribute('data-l');vis[l]=!vis[l];b.classList.toggle('on',vis[l]);})});
+$$('#layers button').forEach(function(b){var l=b.getAttribute('data-l');b.classList.toggle('on',!!vis[l]);
+  b.addEventListener('click',function(){vis[l]=!vis[l];b.classList.toggle('on',vis[l]);
+    if(l==='pres'){store('pres',vis.pres?'1':'0');toast(vis.pres?'\u2726 The ember is listening':'The ember rests');}})});
 $('#saChip').addEventListener('click',function(){ensure();openPanel('raga')});
 $('#enter').addEventListener('click',function(){
   ensure(); $('#gate').classList.add('gone'); started=true; t0=performance.now();
   handpan(fq(0,0),.8); setTimeout(function(){handpan(fq(7,0),.6)},420); setTimeout(function(){handpan(fq(0,1),.5)},840);
   openPanel('handpan');
+  if(!store('hint')){store('hint','1');setTimeout(function(){toast('Drag to turn the plate \u00B7 tap it to strike');},2600);}
 });
+$('#toneBtn').addEventListener('click',toneToggle);
+$('#toneF').addEventListener('input',function(e){tone.sweep=0;setTone(Math.round(20*Math.pow(100,e.target.value/1000)*10)/10);toneUI();});
+$('#toneDn').addEventListener('click',function(){tone.sweep=0;setTone(Math.round(tone.f)-1);toneUI();});
+$('#toneUp').addEventListener('click',function(){tone.sweep=0;setTone(Math.round(tone.f)+1);toneUI();});
+$('#toneSweep').addEventListener('click',function(){ensure();tone.sweep=tone.sweep?0:1;tone.last=performance.now();if(tone.sweep&&!tone.on)toneToggle();else toneUI();});
+$('#micBtn').addEventListener('click',micToggle);
 $('#omBtn').addEventListener('click',function(){ensure();if(om.on){omStop();$('#omBtn').classList.remove('on');}else{omStart();$('#omBtn').classList.add('on');}liveDots();});
 $('#omF').addEventListener('input',function(e){var f=40*Math.pow(1000/40,e.target.value/1000);setOm(Math.round(f*10)/10);$$('#freqs button').forEach(function(x){x.classList.remove('on')});});
 $('#omB').addEventListener('input',function(e){om.breath=+e.target.value;$('#omBr').textContent=om.breath+' s';$('#omBtn').style.setProperty('--br',om.breath+'s');});
@@ -574,9 +903,9 @@ document.addEventListener('fullscreenchange',function(){ if(!document.fullscreen
   }
   requestAnimationFrame(tick);
 })();
-document.addEventListener('visibilitychange',function(){if(document.hidden&&ac&&!om.on&&!tan.on)ac.suspend();else if(!document.hidden&&ac)ac.resume();});
+document.addEventListener('visibilitychange',function(){if(document.hidden&&ac&&!om.on&&!tan.on&&!tone.on&&!mic.on)ac.suspend();else if(!document.hidden&&ac)ac.resume();});
 addEventListener('resize',function(){resize();sizeInst();});
 
-buildFreqs(); refreshScale(); bindPad(); bindDjembe(); setOm(136.1); cym.amp=0;
-resize(); requestAnimationFrame(frame);
+buildFreqs(); buildTones(); refreshScale(); bindPad(); bindDjembe(); setOm(136.1); setTone(tone.f,true); cym.f=136.1; cym.amp=0;
+resize(); initGL(); buildField([[cym.f,1]]); requestAnimationFrame(frame);
 })();
