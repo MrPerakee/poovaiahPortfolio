@@ -249,7 +249,7 @@ function pulse(f,a){cym.f=f;cym.amp=Math.max(cym.amp,a);}
 function rp(){var a=Math.random()*TAU,r=Math.sqrt(Math.random());return {x:Math.cos(a)*r,y:Math.sin(a)*r}}
 
 /* sand */
-var NP=innerWidth<700?13000:((navigator.hardwareConcurrency||4)>=8?38000:26000);
+var NP=innerWidth<700?17000:((navigator.hardwareConcurrency||4)>=8?38000:26000);
 var pos=new Float32Array(NP*3), seed=new Float32Array(NP*2), kicks=[];
 (function(){for(var i=0;i<NP;i++){pos[i*3]=Math.random()*2-1;pos[i*3+1]=Math.random()*2-1;seed[i*2]=Math.random();seed[i*2+1]=Math.random();}})();
 function stepSand(){
@@ -400,7 +400,7 @@ function drawGL(){
   gl.useProgram(prog);
   gl.uniform2f(U.uView,W,H); gl.uniform3f(U.uCam,cam.cx,cam.cy,cam.R); gl.uniform4f(U.uRot,cam.cs,cam.sn,cam.ct,cam.st);
   gl.uniform3f(U.uLight,pres.x,pres.y,pres.z); gl.uniform1f(U.uD,cam.d); gl.uniform1f(U.uDpr,DPR);
-  gl.uniform1f(U.uSize,Math.max(1.25,cam.R/135)); gl.uniform1f(U.uLit,vis.pres?.35+pres.glow*.6:0); gl.uniform1f(U.uGlow,1);
+  gl.uniform1f(U.uSize,W<700?.8:Math.max(1.25,cam.R/135));   // finer grains on phones gl.uniform1f(U.uLit,vis.pres?.35+pres.glow*.6:0); gl.uniform1f(U.uGlow,1);
   gl.enableVertexAttribArray(0);
   if(vis.cym){
     gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
@@ -515,7 +515,7 @@ function micStop(){
   try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(e){}
   mic.on=false; mic.stream=mic.src=mic.an=null; $('#micBtn').classList.remove('on'); $('#micLbl').textContent='Listen';
   $('#micHz').textContent='—'; $('#micNote').textContent='Tap to begin'; $('#micLvl').style.width='0'; $('#micNeedle').style.left='50%'; $('#tuner').classList.remove('ok');
-  micMsg('Tap the circle and allow the microphone. Sound never leaves your device.'); liveDots();
+  micMsg('Tap the circle and allow the microphone. Sound never leaves your device.'); specDraw(null,1,0); liveDots();
 }
 function pitchOf(buf,sr){ // autocorrelation — the first strong repeat is the fundamental
   var n=buf.length,r0=0,i,L,minL=Math.max(2,Math.floor(sr/1100)),maxL=Math.min((n>>1)-2,Math.floor(sr/55));
@@ -527,16 +527,36 @@ function pitchOf(buf,sr){ // autocorrelation — the first strong repeat is the 
   var a=c[best-1],b=c[best],d=c[best+1],den=a-2*b+d;
   return sr/(best+(den?(.5*(a-d)/den):0));
 }
+function specDraw(fb,bin,f0){ // what the room sounds like, low to high, with the heard pitch marked against the raga's notes
+  var c=$('#micSpec'),w=c.clientWidth,h=c.clientHeight; if(!w) return;
+  if(c.width!==Math.round(w*DPR)){c.width=Math.round(w*DPR);c.height=Math.round(h*DPR);}
+  var g=c.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0); g.clearRect(0,0,w,h);
+  var LO=55,HI=1760,span=Math.log2(HI/LO),base=h-13,x,o,k,f,sc=scale();
+  function X(fr){return Math.log2(fr/LO)/span*w}
+  g.font='500 8.5px DM Sans,sans-serif'; g.textAlign='center';
+  for(o=-2;o<=4;o++)for(k=0;k<sc.length;k++){f=fq(sc[k],o); if(f<LO||f>HI) continue; x=X(f);
+    g.fillStyle=sc[k]===0?'rgba(239,160,89,.95)':'rgba(237,235,221,.3)'; g.fillRect(x-.5,base+1,1,sc[k]===0?6:3);
+    if(sc[k]===0) g.fillText('S',x,h-.5);}
+  g.fillStyle='rgba(237,235,221,.1)'; g.fillRect(0,base,w,1);
+  if(fb){ g.beginPath(); g.moveTo(0,base);
+    for(x=0;x<=w;x+=2){var b=LO*Math.pow(2,x/w*span)/bin,i0=Math.floor(b),v=fb[i0]+(fb[i0+1]-fb[i0])*(b-i0),a=Math.max(0,Math.min(1,(v+95)/65));g.lineTo(x,base-a*a*(base-12));}
+    g.lineTo(w,base); g.closePath();
+    var gr=g.createLinearGradient(0,0,0,base); gr.addColorStop(0,'rgba(239,160,89,.75)'); gr.addColorStop(1,'rgba(208,138,69,.08)');
+    g.fillStyle=gr; g.fill(); g.strokeStyle='rgba(239,160,89,.9)'; g.lineWidth=1; g.stroke(); }
+  if(f0>LO&&f0<HI){ x=X(f0); g.fillStyle='#EDEBDD'; g.fillRect(x-.75,10,1.5,base-10);
+    g.font='600 10px DM Sans,sans-serif'; var lbl=f0.toFixed(1)+' Hz · '+westOf(f0),tw=g.measureText(lbl).width/2+2;
+    g.fillText(lbl,Math.max(tw,Math.min(w-tw,x)),8); }
+}
 function micTick(ts){
   if(ts-mic.last<60) return mic.comps; mic.last=ts;
   var an_=mic.an,tb=mic.tbuf,fb=mic.fbuf,i,s=0,sr=ac.sampleRate;
   an_.getFloatTimeDomainData(tb); for(i=0;i<tb.length;i+=2)s+=tb[i]*tb[i];
   var rms=Math.sqrt(s/(tb.length/2)); mic.lvl+=(Math.min(1,rms*9)-mic.lvl)*.4;
   $('#micLvl').style.width=Math.round(mic.lvl*100)+'%';
-  if(rms<.006){ mic.hold++; if(mic.hold>6){$('#micNote').textContent='Listening…';$('#tuner').classList.remove('ok');} return mic.comps; }   // quiet: the figure rests
+  an_.getFloatFrequencyData(fb); var bin=sr/an_.fftSize;
+  if(rms<.006){ mic.hold++; if(mic.hold>6){$('#micNote').textContent='Listening…';$('#tuner').classList.remove('ok');} specDraw(fb,bin,0); return mic.comps; }   // quiet: the figure rests
   mic.hold=0;
-  an_.getFloatFrequencyData(fb);
-  var bin=sr/an_.fftSize,lo=Math.ceil(45/bin),hi=Math.min(fb.length-2,Math.floor(2400/bin)),mx=-200,peaks=[];
+  var lo=Math.ceil(45/bin),hi=Math.min(fb.length-2,Math.floor(2400/bin)),mx=-200,peaks=[];
   for(i=lo;i<=hi;i++) if(fb[i]>mx) mx=fb[i];
   for(i=lo;i<=hi;i++) if(fb[i]>mx-22&&fb[i]>fb[i-1]&&fb[i]>=fb[i+1]){
     var a=fb[i-1],b=fb[i],d=fb[i+1],den=a-2*b+d; peaks.push([(i+(den?.5*(a-d)/den:0))*bin,Math.pow(10,(b-mx)/20)]); }
@@ -552,8 +572,8 @@ function micTick(ts){
     $('#micNote').textContent=sw.name+' '+(sw.cents>0?'+':'')+sw.cents+'¢ · '+westOf(mic.f)+(ok?' · in tune with '+RAGAS[S.raga].n:'');
     $('#micNeedle').style.left=(50+Math.max(-50,Math.min(50,sw.cents)))+'%'; $('#tuner').classList.toggle('ok',ok);
     if(ok) pres.flash=Math.max(pres.flash,.7);
-    cym.f=mic.f;
-  }else if(peaks.length){ mic.comps=peaks; cym.f=peaks[0][0]; $('#micHz').textContent=Math.round(peaks[0][0])+' Hz'; $('#micNote').textContent='Texture — no single pitch'; $('#tuner').classList.remove('ok'); }
+    cym.f=mic.f; specDraw(fb,bin,mic.f);
+  }else if(peaks.length){ specDraw(fb,bin,peaks[0][0]); mic.comps=peaks; cym.f=peaks[0][0]; $('#micHz').textContent=Math.round(peaks[0][0])+' Hz'; $('#micNote').textContent='Texture — no single pitch'; $('#tuner').classList.remove('ok'); }
   cym.amp=Math.max(cym.amp,Math.min(1,.25+mic.lvl));
   return mic.comps;
 }
@@ -593,26 +613,54 @@ function answer(){
   setTimeout(function(){pres.busy=false},(at+.9)*1000);
   if(!store('answered')){store('answered','1');toast('✦ The ember answers — play, pause, and listen');}
 }
-function strike(x,y){ // a tap on the plate
-  ensure(); kicks.push({x:x,y:y,t:performance.now()}); if(kicks.length>4) kicks.shift();
-  pres.tx=x; pres.ty=y; pres.follow=performance.now(); pres.flash=1;
-  var f=cym.f; while(f<180)f*=2; while(f>900)f/=2;
-  var t=now(); [[1,.3,1.2],[2.76,.07,.35],[5.4,.03,.15]].forEach(function(p){var o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f*p[0];
-    env(g,t,.003,p[1],p[2]);o.connect(g);g.connect(bus);o.start(t);o.stop(t+p[2]+.1);});
-  cym.amp=Math.max(cym.amp,.9);
+/* The plate sings like rubbed glass: touch it and it sounds, drag and the tone follows your finger.
+   The centre is deep, the edges high — always on the notes of the chosen raga — in a long, cavernous reverb. */
+var glass={v:{},bus:null};
+function glassBus(){ if(glass.bus) return glass.bus;
+  var g=ac.createGain(),cvr=ac.createConvolver(),wet=ac.createGain(); cvr.buffer=impulse(6.5,1.7); g.gain.value=.5; wet.gain.value=.9;
+  g.connect(instOut); g.connect(cvr); cvr.connect(wet); wet.connect(instOut); return glass.bus=g; }
+function glassNote(x,y){var n=scale().length*3+1,lad=ladder(n,0),r=Math.min(.999,Math.sqrt(x*x+y*y)/1.12);return lad[Math.floor(r*n)];}
+var GLASS=[[1,0,1],[1,5,.55],[2.32,0,.2],[4.25,0,.06]]; // partials of a wine glass; the detuned pair makes it shimmer
+function glassOn(id,x,y){
+  ensure(); var nt=glassNote(x,y),t=now(),V={f:nt.f,key:nt.semi+12*nt.oct,o:[],g:ac.createGain(),k:0};
+  V.g.gain.setValueAtTime(.0001,t); V.g.gain.exponentialRampToValueAtTime(.34,t+.04); V.g.gain.setTargetAtTime(.2,t+.05,.35);
+  GLASS.forEach(function(p){var o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=nt.f*p[0];o.detune.value=p[1];g.gain.value=p[2];
+    o.connect(g);g.connect(V.g);o.start(t);V.o.push(o);});
+  var n=noise(),bp=ac.createBiquadFilter(),ng=ac.createGain(); bp.type='bandpass'; bp.frequency.value=Math.min(8000,nt.f*5); bp.Q.value=6;   // the fingertip's "tink"
+  env(ng,t,.002,.2,.05); n.connect(bp); bp.connect(ng); ng.connect(glassBus()); n.start(t); n.stop(t+.1);
+  V.g.connect(glassBus()); glass.v[id]=V; heard(nt.f); glassTouch(V,x,y,true);
 }
-(function(){ // drag to turn the plate · tap to strike it · the ember follows a hovering hand
-  var ptr=null;
-  function onPlate(e){var q=unproj(e.clientX,e.clientY);return q&&Math.abs(q[0])<=1&&Math.abs(q[1])<=1?q:null;}
-  cv.addEventListener('pointerdown',function(e){ptr={id:e.pointerId,x:e.clientX,y:e.clientY,yaw:cam.yawT,tilt:cam.tiltT,moved:false};
-    try{cv.setPointerCapture(e.pointerId)}catch(err){}});
-  cv.addEventListener('pointermove',function(e){
-    if(ptr&&ptr.id===e.pointerId){var dx=e.clientX-ptr.x,dy=e.clientY-ptr.y; if(Math.abs(dx)+Math.abs(dy)>7) ptr.moved=true;
-      if(ptr.moved){cam.yawT=ptr.yaw+dx*.008;cam.tiltT=Math.max(.15,Math.min(1.28,ptr.tilt-dy*.006));cam.hold=performance.now();}}
-    else if(e.pointerType==='mouse'){var q=onPlate(e); if(q){pres.tx=q[0];pres.ty=q[1];pres.follow=performance.now();}}
+function glassMove(id,x,y){
+  var V=glass.v[id]; if(!V) return; var nt=glassNote(x,y),key=nt.semi+12*nt.oct,ch=key!==V.key;
+  if(ch){ V.key=key; V.f=nt.f; var t=now(); V.o.forEach(function(o,i){o.frequency.setTargetAtTime(nt.f*GLASS[i][0],t,.07)}); heard(nt.f); }
+  glassTouch(V,x,y,ch);
+}
+function glassTouch(V,x,y,force){
+  var n=performance.now(); if(force||n-V.k>110){V.k=n;kicks.push({x:x,y:y,t:n});if(kicks.length>5)kicks.shift();}
+  pres.tx=x; pres.ty=y; pres.follow=n; pres.flash=Math.max(pres.flash,.6); cym.f=V.f; cym.amp=Math.max(cym.amp,.85);
+}
+function glassOff(id){var V=glass.v[id]; if(!V) return; var t=now();
+  V.g.gain.cancelScheduledValues(t); V.g.gain.setValueAtTime(V.g.gain.value,t); V.g.gain.setTargetAtTime(0,t,.8);
+  V.o.forEach(function(o){o.stop(t+5)}); delete glass.v[id];}
+(function(){ // touch the plate to play it · drag across it to bend the tone · drag the empty space to turn the plate
+  var ptrs={};
+  function at(e){return unproj(e.clientX,e.clientY);}
+  function inside(q){return q&&Math.abs(q[0])<=1&&Math.abs(q[1])<=1;}
+  function clamp(q){return [Math.max(-1,Math.min(1,q[0])),Math.max(-1,Math.min(1,q[1]))];}
+  cv.addEventListener('pointerdown',function(e){
+    var q=at(e),play=started&&vis.cym&&inside(q);
+    ptrs[e.pointerId]={play:play,x:e.clientX,y:e.clientY,yaw:cam.yawT,tilt:cam.tiltT};
+    try{cv.setPointerCapture(e.pointerId)}catch(err){}
+    if(play){cam.hold=performance.now();glassOn(e.pointerId,q[0],q[1]);}
   });
-  function up(e){ if(!ptr||ptr.id!==e.pointerId) return; var q=!ptr.moved&&started&&vis.cym?onPlate(e):null; ptr=null; if(q) strike(q[0],q[1]); }
-  cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',function(){ptr=null});
+  cv.addEventListener('pointermove',function(e){
+    var p=ptrs[e.pointerId];
+    if(p&&p.play){var q=at(e); if(q){q=clamp(q);cam.hold=performance.now();glassMove(e.pointerId,q[0],q[1]);}}
+    else if(p){cam.yawT=p.yaw+(e.clientX-p.x)*.008;cam.tiltT=Math.max(.15,Math.min(1.28,p.tilt-(e.clientY-p.y)*.006));cam.hold=performance.now();}
+    else if(e.pointerType==='mouse'){var h=at(e); if(inside(h)){pres.tx=h[0];pres.ty=h[1];pres.follow=performance.now();}}
+  });
+  function up(e){var p=ptrs[e.pointerId]; if(!p) return; delete ptrs[e.pointerId]; if(p.play) glassOff(e.pointerId);}
+  cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
 })();
 
 /* ─────────── LOOP & RECORD ───────────
@@ -825,7 +873,7 @@ function openPanel(p){
   else{sheet.classList.add('open');sheet.setAttribute('data-cur',p);
     $$('.panel').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-p')===p)});
     $$('.dock button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-p')===p)});
-    requestAnimationFrame(sizeInst);}
+    requestAnimationFrame(sizeInst); if(p==='mic'&&!mic.on) requestAnimationFrame(function(){specDraw(null,1,0)});}
   setTimeout(function(){layoutView()},20); setTimeout(function(){layoutView()},520);
 }
 function liveDots(){
@@ -844,7 +892,7 @@ $('#enter').addEventListener('click',function(){
   ensure(); $('#gate').classList.add('gone'); started=true; t0=performance.now();
   handpan(fq(0,0),.8); setTimeout(function(){handpan(fq(7,0),.6)},420); setTimeout(function(){handpan(fq(0,1),.5)},840);
   openPanel('handpan');
-  if(!store('hint')){store('hint','1');setTimeout(function(){toast('Drag to turn the plate \u00B7 tap it to strike');},2600);}
+  if(!store('hint2')){store('hint2','1');setTimeout(function(){toast('Touch the plate — it sings. Drag to bend the tone');},2600);}
 });
 $('#toneBtn').addEventListener('click',toneToggle);
 $('#toneF').addEventListener('input',function(e){tone.sweep=0;setTone(Math.round(20*Math.pow(100,e.target.value/1000)*10)/10);toneUI();});
