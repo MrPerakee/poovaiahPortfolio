@@ -24,3 +24,8 @@
   Cache-Control: public, max-age=2592000
 /resume/*
   X-Robots-Tag: noindex
+
+/*.webmanifest
+  Content-Type: application/manifest+json
+  ! Cache-Control
+  Cache-Control: public, max-age=86400

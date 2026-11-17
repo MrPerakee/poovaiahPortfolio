@@ -1,0 +1,15 @@
+{
+  "name": "Haren Poovaiah — The Architect",
+  "short_name": "Poovaiah",
+  "description": "Venture Architect, Brand Strategist and Creative Director.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {"src": "/assets/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/assets/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "/assets/img/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
