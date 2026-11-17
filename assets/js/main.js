@@ -393,7 +393,7 @@ document.addEventListener('click',function(e){
 
 /* Haren's Ether mark — split into letters for the hover ripple */
 document.querySelectorAll('.ether-link').forEach(function(a){
-  var t=a.textContent; a.setAttribute('aria-label',t+' — enter'); a.textContent='';
+  var t=a.textContent; if(a.tagName==='A') a.setAttribute('aria-label',t+' — enter'); a.textContent='';
   t.split('').forEach(function(ch,i){var s=document.createElement('span');s.className='el'+(ch===' '?' sp':'');s.style.setProperty('--i',i);
     s.setAttribute('aria-hidden','true');s.textContent=ch===' '?'\u00a0':ch;a.appendChild(s);});
 });
