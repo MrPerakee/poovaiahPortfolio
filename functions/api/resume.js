@@ -7,8 +7,6 @@
 
 const FILES = {
   classic: { path: '/resume/Haren_Poovaiah_Resume.pdf',         name: 'Haren_Poovaiah_Resume.pdf' },
-  brand:   { path: '/resume/Haren_Poovaiah_Resume_Brand.pdf',   name: 'Haren_Poovaiah_Resume_Brand.pdf' },
-  venture: { path: '/resume/Haren_Poovaiah_Resume_Venture.pdf', name: 'Haren_Poovaiah_Resume_Venture.pdf' },
 };
 const LINK_MINUTES = 10;
 
