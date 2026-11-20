@@ -786,9 +786,10 @@ function loopSave(){
 }
 
 /* ─────────── UI BUILDERS ─────────── */
-/* Handpan scales, as MIDI notes: ding first, then the tone fields from low to high. "My pan" is Haren's own D Celtic Minor. */
+/* Handpan scales, as MIDI notes: ding first, then the tone fields from low to high. "My pan" is Haren's own C# minor (Mantra Handpans, No. 41). */
 var PANS=[
-  ['My pan · D Celtic Minor',[50,57,60,62,64,65,67,69,72]],
+  ['My pan · C# Minor',[49,56,59,61,63,64,66,68,71]],
+  ['D Celtic Minor',[50,57,60,62,64,65,67,69,72]],
   ['D Kurd',[50,57,58,60,62,64,65,67,69]],
   ['D Amara',[50,57,60,62,64,65,69,72,74]],
   ['D Integral',[50,57,58,60,62,64,65,69,72]],
@@ -799,9 +800,9 @@ var PANS=[
   ['B Celtic Minor',[47,54,57,59,61,62,64,66,69]],
   ['Raga · follows your Sa',null]];
 var pan={i:0,notes:null,edit:false};
-(function(){ try{var st=JSON.parse(store('pan')||'null'); if(st&&st.notes&&st.notes.length===9){pan.i=st.i;pan.notes=st.notes;} }catch(e){}
+(function(){ try{var st=JSON.parse(store('pan2')||'null'); if(st&&st.notes&&st.notes.length===9){pan.i=st.i;pan.notes=st.notes;} }catch(e){}
   if(!pan.notes){pan.i=0;pan.notes=PANS[0][1].slice();} })();
-function panSave(){store('pan',JSON.stringify({i:pan.i,notes:pan.notes}));}
+function panSave(){store('pan2',JSON.stringify({i:pan.i,notes:pan.notes}));}
 function midiF(m){return 440*Math.pow(2,(m-69)/12);}
 function midiName(m){return NOTE[((m%12)+12)%12]+(Math.floor(m/12)-1);}
 function panNotes(){ // [{f,name,sub}]
