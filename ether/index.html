@@ -17,7 +17,7 @@
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Instrument+Serif:ital@0;1&family=Syncopate:wght@400;700&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Instrument+Serif:ital@0;1&family=Syncopate:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Instrument+Serif:ital@0;1&family=Syncopate:wght@400;700&display=swap" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="ether.min.css?v=c14dee048d">
+<link rel="stylesheet" href="ether.min.css?v=0af984517b">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -47,8 +47,14 @@
 
   <!-- HANDPAN -->
   <div class="panel" data-p="handpan">
-    <div class="ph"><h2>Handpan</h2><p id="hpScale">Mayamalavagowla</p></div>
+    <div class="ph"><h2>Handpan</h2><p id="hpScale">D Celtic Minor</p></div>
     <div class="hp" id="hp"></div>
+    <div class="pan-bar" id="panBar"><button class="pill" id="panTog">Scale &amp; notes</button></div>
+    <div class="pan-edit" id="panEdit">
+      <div class="sa-chips pan-scales" id="panScales"></div>
+      <div class="pan-notes" id="panNotes"></div>
+      <p class="fine">Pick a scale, or tune any field up or down by a semitone. Your pan is remembered on this device.</p>
+    </div>
   </div>
 
   <!-- SYNTH PAD -->
@@ -187,6 +193,6 @@
 </div>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="ether.min.js?v=ffb78e4e0a"></script>
+<script src="ether.min.js?v=84a8529cd3"></script>
 </body>
 </html>

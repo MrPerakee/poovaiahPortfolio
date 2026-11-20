@@ -85,17 +85,41 @@ function noise(){ if(!noiseBuf){var l=ac.sampleRate;noiseBuf=ac.createBuffer(1,l
 function env(g,t,a,peak,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+dec)}
 
 /* ─────────── INSTRUMENTS ─────────── */
-// Handpan — modal synthesis: fundamental, octave and compound fifth, the way a tuned steel field rings
-function handpan(f,vel){
-  var t=now(), v=vel||1, out=ac.createGain(); out.gain.value=.55*v; out.connect(bus);
-  var dec=Math.max(1.6,4.6-Math.log2(f/110)*0.9);
-  [[1,1,dec],[2.002,.42,dec*.6],[2.997,.16,dec*.35],[4.01,.05,dec*.2]].forEach(function(p){
-    var o=ac.createOscillator(),g=ac.createGain(); o.type='sine'; o.frequency.value=f*p[0];
-    env(g,t,.004,p[1],p[2]); o.connect(g); g.connect(out); o.start(t); o.stop(t+p[2]+.1);
-  });
-  var n=noise(),bp=ac.createBiquadFilter(),ng=ac.createGain(); bp.type='bandpass'; bp.frequency.value=f*3; bp.Q.value=2;
-  env(ng,t,.002,.12*v,.06); n.connect(bp); bp.connect(ng); ng.connect(out); n.start(t); n.stop(t+.1);
-  pulse(f,1);
+// Handpan — modal synthesis of a tuned steel field.
+// Each field rings at three tuned modes (fundamental, octave, compound fifth). On a real shell each mode is a pair a few
+// cents apart, which gives the slow shimmer; the strike starts slightly sharp and settles; the hand adds a soft wooden
+// thump; the air inside the shell (the Helmholtz "gu") answers low; and neighbouring fields ring quietly in sympathy.
+var hpBus=null;
+function hpOut(){ if(hpBus) return hpBus;
+  var g=ac.createGain(),lp=ac.createBiquadFilter(),cv_=ac.createConvolver(),wet=ac.createGain();
+  lp.type='lowpass'; lp.frequency.value=7200; lp.Q.value=.3; cv_.buffer=impulse(4.8,2.1); wet.gain.value=.42;
+  g.connect(lp); lp.connect(instOut); lp.connect(cv_); cv_.connect(wet); wet.connect(instOut); return hpBus=g; }
+function handpan(f,vel,opt){
+  opt=opt||{}; var t=now(), v=Math.max(.15,Math.min(1.2,vel||1)), out=ac.createGain(), o_=[];
+  out.gain.value=(opt.symp?.05:.42)*v; out.connect(hpOut());
+  var lo=Math.log2(Math.max(60,f)/110), dec=Math.max(2.2,7.5-lo*1.6)*(opt.ding?1.25:1), bright=.55+.45*v;
+  var M=[ // ratio, level, decay share, beat (Hz)
+    [1,     1,            1,   .35+lo*.12],
+    [2.0,   .55*bright,   .55, .6+lo*.2],
+    [3.0,   .22*bright,   .32, .9],
+    [4.01,  .045*bright,  .16, 0],
+    [5.02,  .02*bright,   .1,  0]];
+  if(opt.ding) M.push([.5,.1,.7,0]);                      // the ding's deep "dum"
+  M.forEach(function(m){ if(f*m[0]>14000) return;
+    [[0,1],[m[3],m[3]?.55:0]].forEach(function(pair){ if(!pair[1]) return;
+      var o=ac.createOscillator(),g=ac.createGain(),fr=f*m[0]+pair[0]; o.type='sine';
+      o.frequency.setValueAtTime(fr*1.0045,t); o.frequency.exponentialRampToValueAtTime(fr,t+.07);   // strike sharp, then settles
+      var lvl=m[1]*pair[1], d=dec*m[2];
+      g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(lvl,t+.006+(m[0]>=2?.004:0));
+      g.gain.setTargetAtTime(lvl*.55,t+.012,.18); g.gain.setTargetAtTime(.00001,t+.2,d/4.2);
+      o.connect(g); g.connect(out); o.start(t); o.stop(t+d+.4); o_.push(o); }); });
+  if(!opt.symp){
+    var n=noise(),lp=ac.createBiquadFilter(),ng=ac.createGain(); lp.type='lowpass'; lp.frequency.value=900+f*1.8; lp.Q.value=.7;   // the finger
+    env(ng,t,.0015,.22*v,.045); n.connect(lp); lp.connect(ng); ng.connect(out); n.start(t); n.stop(t+.08);
+    var gu=ac.createOscillator(),gg=ac.createGain(); gu.type='sine'; gu.frequency.setValueAtTime(opt.ding?92:118,t); gu.frequency.exponentialRampToValueAtTime(opt.ding?84:104,t+.3);
+    env(gg,t,.008,(opt.ding?.3:.08)*v,opt.ding?.9:.35); gu.connect(gg); gg.connect(out); gu.start(t); gu.stop(t+1.3);
+    pulse(f,1);
+  }
 }
 // Djembe — membrane synthesis
 function djembe(kind){
@@ -286,7 +310,6 @@ function layoutView(snap){
 }
 /* camera: the plate lies in x,y (z is up); we look down at it from a tilt and can orbit */
 function camUpdate(){
-  if(performance.now()-cam.hold>4000) cam.yawT+=.0007;
   cam.yaw+=(cam.yawT-cam.yaw)*.14; cam.tilt+=(cam.tiltT-cam.tilt)*.14;
   cam.cs=Math.cos(cam.yaw); cam.sn=Math.sin(cam.yaw); cam.ct=Math.cos(cam.tilt); cam.st=Math.sin(cam.tilt);
   // size the plate so it fits the free space at any rotation; on wide screens it steps aside for the open panel
@@ -763,19 +786,153 @@ function loopSave(){
 }
 
 /* ─────────── UI BUILDERS ─────────── */
-function buildHandpan(){
-  var hp=$('#hp'); hp.innerHTML=''; var notes=ladder(9,0);
-  // ding in the centre; eight fields climb in a zig-zag from the bottom, the way a real pan is laid out
-  var ANG=[112,68,148,32,188,-8,232,-52];
-  notes.forEach(function(nt,i){
-    var b=document.createElement('button'); b.textContent=nt.name+(nt.oct>0?'\u0307':'');
-    if(i===0){b.className='ding';b.style.left='50%';b.style.top='50%';b.style.width=b.style.height='30%';}
-    else{var a=ANG[i-1]*Math.PI/180;
-      b.style.left=(50+Math.cos(a)*35)+'%';b.style.top=(50+Math.sin(a)*35)+'%';b.style.width=b.style.height='21%';}
-    b.addEventListener('pointerdown',function(e){e.preventDefault();ensure();handpan(nt.f,1);heard(nt.f);hit(b);});
-    hp.appendChild(b);
+/* Handpan scales, as MIDI notes: ding first, then the tone fields from low to high. "My pan" is Haren's own D Celtic Minor. */
+var PANS=[
+  ['My pan · D Celtic Minor',[50,57,60,62,64,65,67,69,72]],
+  ['D Kurd',[50,57,58,60,62,64,65,67,69]],
+  ['D Amara',[50,57,60,62,64,65,69,72,74]],
+  ['D Integral',[50,57,58,60,62,64,65,69,72]],
+  ['D Hijaz',[50,57,58,61,62,64,65,67,69]],
+  ['C Aegean',[48,52,55,59,60,62,64,67,71]],
+  ['F Pygmy',[53,56,60,61,63,65,68,72,75]],
+  ['E Equinox',[52,55,59,60,62,64,67,71,72]],
+  ['B Celtic Minor',[47,54,57,59,61,62,64,66,69]],
+  ['Raga · follows your Sa',null]];
+var pan={i:0,notes:null,edit:false};
+(function(){ try{var st=JSON.parse(store('pan')||'null'); if(st&&st.notes&&st.notes.length===9){pan.i=st.i;pan.notes=st.notes;} }catch(e){}
+  if(!pan.notes){pan.i=0;pan.notes=PANS[0][1].slice();} })();
+function panSave(){store('pan',JSON.stringify({i:pan.i,notes:pan.notes}));}
+function midiF(m){return 440*Math.pow(2,(m-69)/12);}
+function midiName(m){return NOTE[((m%12)+12)%12]+(Math.floor(m/12)-1);}
+function panNotes(){ // [{f,name,sub}]
+  if(PANS[pan.i]&&PANS[pan.i][1]===null) return ladder(9,-1).map(function(nt){return {f:nt.f,name:nt.name+(nt.oct>0?'̇':nt.oct<0?'̣':''),sub:westOf(nt.f)};});
+  return pan.notes.map(function(m){return {f:midiF(m),name:NOTE[((m%12)+12)%12],sub:midiName(m)};});
+}
+function panLabel(){ var p=PANS[pan.i], cust=p[1]&&p[1].join()!==pan.notes.join();
+  return p[1]===null?RAGAS[S.raga].n:(cust?'Custom · '+midiName(pan.notes[0]):p[0]); }
+
+/* A rustic handpan, drawn in 3D: nitrided steel, hammer marks, oval tone fields with dimples, a raised ding.
+   The shell is painted once into an offscreen canvas; only the glow of struck notes is animated. */
+var HP={cv:null,ctx:null,base:null,w:0,dpr:1,fields:[],glow:[],raf:0,tilt:.86};
+var HP_ANG=[112,68,148,32,188,-8,232,-52];                 // the zig-zag climb a maker uses, starting at the bottom
+function hpLayout(){
+  var w=HP.w,cx=w/2,cy=w/2,R=w*.46,ty=HP.tilt,F=[];
+  F.push({x:cx,y:cy,rx:R*.27,ry:R*.27*ty,rot:0,ding:true});
+  for(var i=0;i<8;i++){var a=HP_ANG[i]*Math.PI/180,rr=R*.66,k=i<2?1:i<4?.97:i<6?.92:.86;
+    var vr=Math.atan2(Math.sin(a)*ty,Math.cos(a)); F.push({x:cx+Math.cos(a)*rr,y:cy+Math.sin(a)*rr*ty,rx:R*.19*k,ry:R*.145*k,rot:vr,ding:false});   // ovals point to the ding}
+  HP.fields=F; HP.R=R; HP.cx=cx; HP.cy=cy;
+}
+function hpNoiseTex(c,w,h,R){ // hammer marks: hundreds of soft dents, each with its own light and shadow
+  var rnd=(function(sd){return function(){sd=(sd*16807)%2147483647;return sd/2147483647}})(11);
+  for(var i=0;i<Math.round(R*R/14);i++){var a=rnd()*Math.PI*2,r=Math.sqrt(rnd())*R*.97,x=w/2+Math.cos(a)*r,y=h/2+Math.sin(a)*r*HP.tilt,s=.8+rnd()*R*.014;
+    c.fillStyle='rgba(255,236,205,'+(rnd()*.028)+')';c.beginPath();c.ellipse(x-s*.3,y-s*.3,s,s*.75,a,0,7);c.fill();
+    c.fillStyle='rgba(0,0,0,'+(rnd()*.06)+')';c.beginPath();c.ellipse(x+s*.3,y+s*.3,s*.85,s*.6,a,0,7);c.fill();}
+}
+function hpPaintBase(){
+  var w=HP.w,d=HP.dpr,b=document.createElement('canvas'); b.width=b.height=Math.round(w*d); var c=b.getContext('2d'); c.scale(d,d);
+  var cx=HP.cx,cy=HP.cy,R=HP.R,ty=HP.tilt,g,i;
+  // shadow on the ground
+  g=c.createRadialGradient(cx,cy+R*.25,R*.3,cx,cy+R*.25,R*1.15); g.addColorStop(0,'rgba(0,0,0,.75)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  c.fillStyle=g; c.beginPath(); c.ellipse(cx,cy+R*.2,R*1.12,R*ty*1.12,0,0,7); c.fill();
+  // the lower shell's rim, seen below the top
+  c.fillStyle='#120d09'; c.beginPath(); c.ellipse(cx,cy+R*.07,R*1.005,R*ty*1.005,0,0,7); c.fill();
+  // top shell — nitrided steel: deep brown-black with copper and a breath of blue
+  g=c.createRadialGradient(cx-R*.32,cy-R*.42*ty,R*.05,cx,cy,R*1.05);
+  g.addColorStop(0,'#6b4a2e'); g.addColorStop(.35,'#3d2a1b'); g.addColorStop(.72,'#21170f'); g.addColorStop(1,'#120c08');
+  c.save(); c.beginPath(); c.ellipse(cx,cy,R,R*ty,0,0,7); c.clip(); c.fillStyle=g; c.fillRect(0,0,w,w);
+  [[-.45,.3,'rgba(70,92,110,.16)'],[.5,-.35,'rgba(150,90,40,.18)'],[.15,.55,'rgba(110,60,30,.14)']].forEach(function(p){ // patina
+    var gg=c.createRadialGradient(cx+p[0]*R,cy+p[1]*R*ty,0,cx+p[0]*R,cy+p[1]*R*ty,R*.7); gg.addColorStop(0,p[2]); gg.addColorStop(1,'rgba(0,0,0,0)');
+    c.fillStyle=gg; c.fillRect(0,0,w,w); });
+  hpNoiseTex(c,w,w,R);
+  // tone fields
+  HP.fields.forEach(function(F,k){ if(F.ding) return;
+    c.save(); c.translate(F.x,F.y); c.rotate(F.rot);
+    var grd=c.createRadialGradient(-F.rx*.2,-F.ry*.35,F.rx*.1,0,0,F.rx*1.1);
+    grd.addColorStop(0,'rgba(120,84,52,.55)'); grd.addColorStop(.7,'rgba(42,28,18,.25)'); grd.addColorStop(1,'rgba(0,0,0,0)');
+    c.fillStyle=grd; c.beginPath(); c.ellipse(0,0,F.rx,F.ry,0,0,7); c.fill();
+    c.strokeStyle='rgba(0,0,0,.55)'; c.lineWidth=Math.max(1,R*.012); c.beginPath(); c.ellipse(0,F.ry*.04,F.rx,F.ry,0,0,7); c.stroke();
+    c.strokeStyle='rgba(255,220,170,.13)'; c.lineWidth=Math.max(.8,R*.006); c.beginPath(); c.ellipse(0,-F.ry*.04,F.rx*.99,F.ry*.99,0,Math.PI*1.05,Math.PI*1.95); c.stroke();
+    // the dimple: a shallow dent, lit from the top left
+    var dr=F.rx*.36, dg=c.createRadialGradient(dr*.25,dr*.3,0,0,0,dr);
+    dg.addColorStop(0,'rgba(170,120,75,.5)'); dg.addColorStop(.55,'rgba(40,26,16,.65)'); dg.addColorStop(1,'rgba(0,0,0,.0)');
+    c.fillStyle=dg; c.beginPath(); c.ellipse(0,0,dr,dr*F.ry/F.rx*1.05,0,0,7); c.fill();
+    c.strokeStyle='rgba(0,0,0,.4)'; c.lineWidth=Math.max(.8,R*.006); c.beginPath(); c.ellipse(0,0,dr,dr*F.ry/F.rx*1.05,0,Math.PI*1.1,Math.PI*1.9); c.stroke();
+    c.restore();
   });
-  $('#hpScale').textContent=RAGAS[S.raga].n;
+  // ding: a raised dome
+  var D=HP.fields[0]; g=c.createRadialGradient(D.x-D.rx*.35,D.y-D.ry*.55,D.rx*.05,D.x,D.y,D.rx*1.05);
+  g.addColorStop(0,'#a07048'); g.addColorStop(.4,'#5a3d25'); g.addColorStop(.85,'#26190f'); g.addColorStop(1,'#140d08');
+  c.fillStyle='rgba(0,0,0,.5)'; c.beginPath(); c.ellipse(D.x+D.rx*.04,D.y+D.ry*.12,D.rx*1.08,D.ry*1.08,0,0,7); c.fill();
+  c.fillStyle=g; c.beginPath(); c.ellipse(D.x,D.y,D.rx,D.ry,0,0,7); c.fill();
+  c.strokeStyle='rgba(255,226,180,.22)'; c.lineWidth=Math.max(1,R*.008); c.beginPath(); c.ellipse(D.x,D.y,D.rx*.97,D.ry*.97,0,Math.PI*1.08,Math.PI*1.9); c.stroke();
+  var sp=c.createRadialGradient(D.x-D.rx*.32,D.y-D.ry*.45,0,D.x-D.rx*.32,D.y-D.ry*.45,D.rx*.35); sp.addColorStop(0,'rgba(255,236,205,.42)'); sp.addColorStop(1,'rgba(255,236,205,0)');
+  c.fillStyle=sp; c.fillRect(D.x-D.rx,D.y-D.ry,D.rx*2,D.ry*2);
+  c.restore();
+  // rim: a thin bright edge and a broad glint
+  c.strokeStyle='rgba(255,220,170,.28)'; c.lineWidth=Math.max(1,R*.01); c.beginPath(); c.ellipse(cx,cy,R*.995,R*ty*.995,0,Math.PI*1.02,Math.PI*1.98); c.stroke();
+  c.strokeStyle='rgba(0,0,0,.6)'; c.lineWidth=Math.max(1,R*.012); c.beginPath(); c.ellipse(cx,cy,R,R*ty,0,Math.PI*.05,Math.PI*.95); c.stroke();
+  c.save(); c.beginPath(); c.ellipse(cx,cy,R,R*ty,0,0,7); c.clip(); c.translate(cx-R*.38,cy-R*ty*.5); c.rotate(-.5); c.scale(1,.38);
+  g=c.createRadialGradient(0,0,0,0,0,R*.62); g.addColorStop(0,'rgba(255,230,190,.13)'); g.addColorStop(1,'rgba(255,230,190,0)'); c.fillStyle=g; c.fillRect(-R,-R,R*2,R*2); c.restore();
+  HP.base=b;
+}
+function hpDraw(){
+  var c=HP.ctx,w=HP.w,d=HP.dpr,tn=performance.now(),live=false,nts=panNotes();
+  c.setTransform(d,0,0,d,0,0); c.clearRect(0,0,w,w); if(HP.base) c.drawImage(HP.base,0,0,w,w);
+  HP.fields.forEach(function(F,k){
+    var gl_=HP.glow[k]||0,age=gl_?(tn-gl_)/1000:9,e=Math.max(0,1-age/1.6);
+    if(e>0){ live=true; var wob=1+Math.sin(age*60)*.012*e;
+      c.save(); c.translate(F.x,F.y); c.rotate(F.rot); c.scale(wob,wob);
+      var g=c.createRadialGradient(0,0,0,0,0,F.rx*1.15); g.addColorStop(0,'rgba(255,190,120,'+(.38*e)+')'); g.addColorStop(.6,'rgba(239,160,89,'+(.16*e)+')'); g.addColorStop(1,'rgba(239,160,89,0)');
+      c.fillStyle=g; c.beginPath(); c.ellipse(0,0,F.rx*1.15,F.ry*1.15,0,0,7); c.fill();
+      c.strokeStyle='rgba(255,200,140,'+(.6*e)+')'; c.lineWidth=1.2; c.beginPath(); c.ellipse(0,0,F.rx*(1+age*.5),F.ry*(1+age*.5),0,0,7); c.stroke();
+      c.restore(); }
+    var n=nts[k]; if(!n) return;
+    c.font='600 '+Math.round(HP.R*(F.ding?.085:.068))+'px DM Sans,sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+    var ly=F.y+(F.ding?F.ry*.48:0)+(F.ding?0:F.ry*.62);
+    c.fillStyle='rgba(0,0,0,.55)'; c.fillText(n.name,F.x+.7,ly+.9);
+    c.fillStyle=e>0?'rgba(255,224,186,'+(.6+.4*e)+')':'rgba(237,220,190,.55)'; c.fillText(n.name,F.x,ly);
+    if(HP.w>300){c.font='500 '+Math.round(HP.R*.045)+'px DM Sans,sans-serif'; c.fillStyle='rgba(237,220,190,.32)'; c.fillText(n.sub,F.x,ly+HP.R*.07);}
+  });
+  HP.raf=live?requestAnimationFrame(hpDraw):0;
+}
+function hpKick(){ if(!HP.raf) HP.raf=requestAnimationFrame(hpDraw); }
+function hpPick(x,y){ // which field is under the finger — the nearest oval within reach
+  var best=-1,bd=1e9;
+  HP.fields.forEach(function(F,k){var dx=x-F.x,dy=y-F.y,cs=Math.cos(-F.rot),sn=Math.sin(-F.rot),u=(dx*cs-dy*sn)/F.rx,v=(dx*sn+dy*cs)/F.ry,dd=u*u+v*v;
+    if(dd<bd){bd=dd;best=k;}});
+  var dx=x-HP.cx,dy=(y-HP.cy)/HP.tilt; return bd<2.6&&dx*dx+dy*dy<HP.R*HP.R*1.02?best:-1;
+}
+function hpStrike(k,vel){
+  var nts=panNotes(),n=nts[k]; if(!n) return; ensure(); buzz(k?6:10);
+  handpan(n.f,vel,{ding:k===0}); heard(n.f); HP.glow[k]=performance.now();
+  nts.forEach(function(m,j){ if(j===k) return; var r=m.f/n.f, h=Math.abs(1200*Math.log2(r/Math.round(r)));   // sympathy: octaves and fifths ring along
+    if(Math.round(r)>=1&&Math.round(r)<=3&&h<25) handpan(m.f,vel*.6,{symp:true}); });
+  hpKick();
+}
+function buildHandpan(){
+  var hp=$('#hp');
+  if(!HP.cv){ hp.innerHTML=''; HP.cv=document.createElement('canvas'); HP.cv.setAttribute('aria-label','Handpan — tap the tone fields'); hp.appendChild(HP.cv); HP.ctx=HP.cv.getContext('2d');
+    HP.cv.addEventListener('pointerdown',function(e){e.preventDefault(); var r=HP.cv.getBoundingClientRect(),x=(e.clientX-r.left)*HP.w/r.width,y=(e.clientY-r.top)*HP.w/r.height,k=hpPick(x,y);
+      if(k<0) return; var F=HP.fields[k],dx=(x-F.x)/F.rx,dy=(y-F.y)/F.ry,c_=Math.sqrt(dx*dx+dy*dy); hpStrike(k,1-Math.min(.45,Math.abs(c_-.4)*.5));}); }
+  sizeInst(); hpSize(); $('#hpScale').textContent=panLabel(); buildPanEdit();
+}
+function hpSize(){
+  var hp=$('#hp'),w=Math.round(hp.clientWidth)||300; if(!w) return; var d=Math.min(window.devicePixelRatio||1,2);
+  if(w===HP.w&&d===HP.dpr&&HP.base&&HP.key===pan.notes.join()+pan.i) return hpKick();
+  HP.w=w; HP.dpr=d; HP.key=pan.notes.join()+pan.i; HP.cv.width=HP.cv.height=Math.round(w*d); HP.cv.style.width=HP.cv.style.height=w+'px';
+  hpLayout(); hpPaintBase(); hpKick();
+}
+function buildPanEdit(){
+  var box=$('#panEdit'); if(!box) return;
+  var ch=$('#panScales'); if(!ch.childElementCount) PANS.forEach(function(p,i){var b=document.createElement('button');b.textContent=p[0];
+    b.onclick=function(){pan.i=i; if(p[1]) pan.notes=p[1].slice(); panSave(); HP.key=''; buildHandpan(); hpStrike(0,.8);}; ch.appendChild(b);});
+  $$('#panScales button').forEach(function(b,i){b.classList.toggle('on',i===pan.i)});
+  var nb=$('#panNotes'); nb.innerHTML=''; var raga=PANS[pan.i][1]===null; nb.classList.toggle('dim',raga);
+  pan.notes.forEach(function(m,k){var d=document.createElement('div');d.className='pn';
+    d.innerHTML='<button aria-label="Lower">−</button><span><b>'+midiName(m)+'</b><i>'+(k?k:'Ding')+'</i></span><button aria-label="Higher">+</button>';
+    var bs=d.querySelectorAll('button');
+    function step(s_){ if(raga){pan.i=0;} pan.notes[k]=Math.max(36,Math.min(84,pan.notes[k]+s_)); panSave(); HP.key=''; buildHandpan(); hpStrike(k,.8); }
+    bs[0].onclick=function(){step(-1)}; bs[1].onclick=function(){step(1)}; nb.appendChild(d);});
 }
 function buzz(ms){try{if(navigator.vibrate)navigator.vibrate(ms)}catch(e){}}
 function hit(el){buzz(6);el.classList.remove('hit');void el.offsetWidth;el.classList.add('hit');setTimeout(function(){el.classList.remove('hit')},180);}
@@ -839,7 +996,10 @@ function buildTones(){
 function setOm(f){om.f=f;$('#omF').value=Math.round(Math.log(f/40)/Math.log(1000/40)*1000);$('#omHz').textContent=f.toFixed(1)+' Hz';omSetF(f);cym.f=f;cym.amp=Math.max(cym.amp,.5);}
 
 function sizeInst(){ // circular instruments: largest circle that fits the panel
-  ['#hp','#dj'].forEach(function(sel){var el=$(sel),pn=el.parentElement;if(!pn.classList.contains('on'))return;
+  var hp=$('#hp'),hpn=hp.parentElement;
+  if(hpn.classList.contains('on')&&HP.cv){ var ed=$('#panBar').offsetHeight+($('#panEdit').classList.contains('open')?$('#panEdit').offsetHeight:0);
+    var sz=Math.min(hpn.clientWidth-24,hpn.clientHeight-hpn.querySelector('.ph').offsetHeight-ed-34); hp.style.width=hp.style.height=Math.max(160,sz)+'px'; hpSize(); }
+  ['#dj'].forEach(function(sel){var el=$(sel),pn=el.parentElement;if(!pn.classList.contains('on'))return;
     var hd=pn.querySelector('.ph').offsetHeight+12, s=Math.min(pn.clientWidth-32,pn.clientHeight-hd-28);
     el.style.width=el.style.height=Math.max(140,s)+'px';});
 }
@@ -869,7 +1029,7 @@ $$('#layers button').forEach(function(b){var l=b.getAttribute('data-l');b.classL
 $('#saChip').addEventListener('click',function(){ensure();openPanel('raga')});
 $('#enter').addEventListener('click',function(){
   ensure(); $('#gate').classList.add('gone'); started=true; t0=performance.now(); stayAwake();
-  handpan(fq(0,0),.8); setTimeout(function(){handpan(fq(7,0),.6)},420); setTimeout(function(){handpan(fq(0,1),.5)},840);
+  setTimeout(function(){hpStrike(0,.8)},250); setTimeout(function(){hpStrike(2,.6)},700); setTimeout(function(){hpStrike(4,.5)},1150);
   openPanel('handpan');
   if(!store('hint2')){store('hint2','1');setTimeout(function(){toast('Touch the plate — it sings. Drag to bend the tone');},2600);}
 });
@@ -879,6 +1039,7 @@ $('#toneDn').addEventListener('click',function(){tone.sweep=0;setTone(Math.round
 $('#toneUp').addEventListener('click',function(){tone.sweep=0;setTone(Math.round(tone.f)+1);toneUI();});
 $('#toneSweep').addEventListener('click',function(){ensure();tone.sweep=tone.sweep?0:1;tone.last=performance.now();if(tone.sweep&&!tone.on)toneToggle();else toneUI();});
 $('#micBtn').addEventListener('click',micToggle);
+$('#panTog').addEventListener('click',function(){var e=$('#panEdit'),o=!e.classList.contains('open');e.classList.toggle('open',o);this.classList.toggle('on',o);sizeInst();});
 $('#omBtn').addEventListener('click',function(){ensure();if(om.on){omStop();$('#omBtn').classList.remove('on');}else{omStart();$('#omBtn').classList.add('on');}liveDots();});
 $('#omF').addEventListener('input',function(e){var f=40*Math.pow(1000/40,e.target.value/1000);setOm(Math.round(f*10)/10);$$('#freqs button').forEach(function(x){x.classList.remove('on')});});
 $('#omB').addEventListener('input',function(e){om.breath=+e.target.value;$('#omBr').textContent=om.breath+' s';$('#omBtn').style.setProperty('--br',om.breath+'s');});
