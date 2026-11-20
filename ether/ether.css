@@ -305,3 +305,16 @@ body.full .spec{height:160px}
   input[type=range]::-webkit-slider-thumb{width:24px;height:24px;margin-top:-11px}
 }
 @media(max-width:380px){.tone,.mic,.om,.looper{gap:12px}.tone-btn,.mic-btn,.om-btn,.loop-ring{width:96px;height:96px}.om-btn{font-size:48px}.ph h2{font-size:22px}}
+
+/* handpan — maker info */
+.hp-info{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-left:6px;vertical-align:4px;border-radius:50%;
+  border:1px solid var(--line2);font-family:var(--serif);font-style:italic;font-size:13px;line-height:1;color:var(--c56);transition:all .25s}
+.hp-info:hover,.hp-info[aria-expanded=true]{border-color:var(--ember);color:var(--ember-lt);background:var(--glow)}
+.hp-card{position:absolute;z-index:4;top:52px;left:16px;display:flex;flex-direction:column;gap:3px;padding:14px 16px;min-width:220px;
+  border:1px solid var(--line2);border-radius:14px;background:rgba(14,11,8,.96);box-shadow:0 18px 40px -12px rgba(0,0,0,.9);
+  opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .25s,transform .25s}
+.hp-card.open{opacity:1;transform:none;pointer-events:auto}
+.hp-card small{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--c34)}
+.hp-card b{font-family:var(--serif);font-style:italic;font-weight:400;font-size:21px;color:var(--cream);margin:2px 0 3px}
+.hp-card span{font-size:12px;color:var(--c72)}
+.hp-card a{margin-top:7px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ember-lt)}

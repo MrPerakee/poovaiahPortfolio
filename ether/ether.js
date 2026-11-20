@@ -819,7 +819,7 @@ var HP={cv:null,ctx:null,base:null,w:0,dpr:1,fields:[],glow:[],raf:0,tilt:.86};
 var HP_POS=[[0,-.106,.278,.179],[.039,.62,.258,.123],[-.561,.375,.219,.099],[.596,.36,.199,.087],[-.7,-.195,.179,.076],
   [.705,-.205,.169,.07],[-.416,-.622,.155,.062],[.429,-.618,.139,.05],[.025,-.752,.123,.042]];
 var HP_IMG=null;
-function hpPhoto(){ return pan.i===0; }   // "My pan" is shown as the real instrument
+function hpPhoto(){ return true; }   // every scale is played on the real instrument
 function hpLayout(){
   var w=HP.w,cx=w/2,cy=w/2,photo=hpPhoto()&&HP_IMG&&HP_IMG.complete&&HP_IMG.naturalWidth;
   HP.tilt=photo?1:.86; var R=w*(photo?.49:.46),ty=HP.tilt,F=[];
@@ -1071,6 +1071,8 @@ $('#toneDn').addEventListener('click',function(){tone.sweep=0;setTone(Math.round
 $('#toneUp').addEventListener('click',function(){tone.sweep=0;setTone(Math.round(tone.f)+1);toneUI();});
 $('#toneSweep').addEventListener('click',function(){ensure();tone.sweep=tone.sweep?0:1;tone.last=performance.now();if(tone.sweep&&!tone.on)toneToggle();else toneUI();});
 $('#micBtn').addEventListener('click',micToggle);
+$('#hpInfo').addEventListener('click',function(e){e.stopPropagation();var c=$('#hpCard'),o=!c.classList.contains('open');c.classList.toggle('open',o);this.setAttribute('aria-expanded',o);});
+document.addEventListener('pointerdown',function(e){var c=$('#hpCard');if(c.classList.contains('open')&&!c.contains(e.target)&&e.target.id!=='hpInfo'){c.classList.remove('open');$('#hpInfo').setAttribute('aria-expanded','false');}});
 $('#panTog').addEventListener('click',function(){var e=$('#panEdit'),o=!e.classList.contains('open');e.classList.toggle('open',o);this.classList.toggle('on',o);sizeInst();});
 $('#omBtn').addEventListener('click',function(){ensure();if(om.on){omStop();$('#omBtn').classList.remove('on');}else{omStart();$('#omBtn').classList.add('on');}liveDots();});
 $('#omF').addEventListener('input',function(e){var f=40*Math.pow(1000/40,e.target.value/1000);setOm(Math.round(f*10)/10);$$('#freqs button').forEach(function(x){x.classList.remove('on')});});

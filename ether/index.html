@@ -17,7 +17,7 @@
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Instrument+Serif:ital@0;1&family=Syncopate:wght@400;700&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Instrument+Serif:ital@0;1&family=Syncopate:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Instrument+Serif:ital@0;1&family=Syncopate:wght@400;700&display=swap" rel="stylesheet"></noscript>
-<link rel="stylesheet" href="ether.min.css?v=0af984517b">
+<link rel="stylesheet" href="ether.min.css?v=06897af1b5">
 </head>
 <body>
 <canvas id="cv"></canvas>
@@ -47,7 +47,14 @@
 
   <!-- HANDPAN -->
   <div class="panel" data-p="handpan">
-    <div class="ph"><h2>Handpan</h2><p id="hpScale">D Celtic Minor</p></div>
+    <div class="ph"><h2>Handpan <button class="hp-info" id="hpInfo" aria-label="About this handpan" aria-expanded="false">i</button></h2><p id="hpScale">D Celtic Minor</p></div>
+    <div class="hp-card" id="hpCard" role="dialog" aria-label="About this handpan">
+      <small>The instrument</small>
+      <b>Mantra Handpans</b>
+      <span>No. 41 · made in 2021 · India</span>
+      <span>Haren's own pan · D Celtic Minor</span>
+      <a href="https://www.mantrahandpans.com" target="_blank" rel="noopener">mantrahandpans.com &#8599;</a>
+    </div>
     <div class="hp" id="hp"></div>
     <div class="pan-bar" id="panBar"><button class="pill" id="panTog">Scale &amp; notes</button></div>
     <div class="pan-edit" id="panEdit">
@@ -193,6 +200,6 @@
 </div>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="ether.min.js?v=3223a8e9cf"></script>
+<script src="ether.min.js?v=6628fb58b7"></script>
 </body>
 </html>
