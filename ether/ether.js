@@ -814,13 +814,18 @@ function panLabel(){ var p=PANS[pan.i], cust=p[1]&&p[1].join()!==pan.notes.join(
 /* A rustic handpan, drawn in 3D: nitrided steel, hammer marks, oval tone fields with dimples, a raised ding.
    The shell is painted once into an offscreen canvas; only the glow of struck notes is animated. */
 var HP={cv:null,ctx:null,base:null,w:0,dpr:1,fields:[],glow:[],raf:0,tilt:.86};
-var HP_ANG=[112,68,148,32,188,-8,232,-52];                 // the zig-zag climb a maker uses, starting at the bottom
+// Field positions measured from Haren's own pan (photo, top view): ding, then the eight fields low → high.
+// [x, y, field radius, dimple radius], as fractions of the shell radius.
+var HP_POS=[[0,-.106,.278,.179],[.039,.62,.258,.123],[-.561,.375,.219,.099],[.596,.36,.199,.087],[-.7,-.195,.179,.076],
+  [.705,-.205,.169,.07],[-.416,-.622,.155,.062],[.429,-.618,.139,.05],[.025,-.752,.123,.042]];
+var HP_IMG=null;
+function hpPhoto(){ return pan.i===0; }   // "My pan" is shown as the real instrument
 function hpLayout(){
-  var w=HP.w,cx=w/2,cy=w/2,R=w*.46,ty=HP.tilt,F=[];
-  F.push({x:cx,y:cy,rx:R*.27,ry:R*.27*ty,rot:0,ding:true});
-  for(var i=0;i<8;i++){var a=HP_ANG[i]*Math.PI/180,rr=R*.66,k=i<2?1:i<4?.97:i<6?.92:.86;
-    var vr=Math.atan2(Math.sin(a)*ty,Math.cos(a)); F.push({x:cx+Math.cos(a)*rr,y:cy+Math.sin(a)*rr*ty,rx:R*.19*k,ry:R*.145*k,rot:vr,ding:false});   // ovals point to the ding}
-  HP.fields=F; HP.R=R; HP.cx=cx; HP.cy=cy;
+  var w=HP.w,cx=w/2,cy=w/2,photo=hpPhoto()&&HP_IMG&&HP_IMG.complete&&HP_IMG.naturalWidth;
+  HP.tilt=photo?1:.86; var R=w*(photo?.49:.46),ty=HP.tilt,F=[];
+  HP_POS.forEach(function(q,k){ var x=cx+q[0]*R,y=cy+q[1]*R*ty,a=Math.atan2(q[1]*ty,q[0]);
+    F.push({x:x,y:y,rx:q[2]*R*(k?1.05:1),ry:q[2]*R*(k?.82:1)*ty,dr:q[3]*R,rot:k?a:0,ding:k===0}); });
+  HP.fields=F; HP.R=R; HP.cx=cx; HP.cy=cy; HP.photo=!!photo;
 }
 function hpNoiseTex(c,w,h,R){ // hammer marks: hundreds of soft dents, each with its own light and shadow
   var rnd=(function(sd){return function(){sd=(sd*16807)%2147483647;return sd/2147483647}})(11);
@@ -831,6 +836,13 @@ function hpNoiseTex(c,w,h,R){ // hammer marks: hundreds of soft dents, each with
 function hpPaintBase(){
   var w=HP.w,d=HP.dpr,b=document.createElement('canvas'); b.width=b.height=Math.round(w*d); var c=b.getContext('2d'); c.scale(d,d);
   var cx=HP.cx,cy=HP.cy,R=HP.R,ty=HP.tilt,g,i;
+  if(HP.photo){ // the real instrument
+    g=c.createRadialGradient(cx,cy+R*.08,R*.6,cx,cy+R*.08,R*1.08); g.addColorStop(0,'rgba(0,0,0,.8)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    c.fillStyle=g; c.beginPath(); c.arc(cx,cy+R*.06,R*1.08,0,7); c.fill();
+    var ir=R/.995; c.drawImage(HP_IMG,cx-ir,cy-ir,ir*2,ir*2);
+    g=c.createRadialGradient(cx,cy,R*.55,cx,cy,R); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.28)');
+    c.fillStyle=g; c.beginPath(); c.arc(cx,cy,R,0,7); c.fill();
+    HP.base=b; return; }
   // shadow on the ground
   g=c.createRadialGradient(cx,cy+R*.25,R*.3,cx,cy+R*.25,R*1.15); g.addColorStop(0,'rgba(0,0,0,.75)'); g.addColorStop(1,'rgba(0,0,0,0)');
   c.fillStyle=g; c.beginPath(); c.ellipse(cx,cy+R*.2,R*1.12,R*ty*1.12,0,0,7); c.fill();
@@ -853,7 +865,7 @@ function hpPaintBase(){
     c.strokeStyle='rgba(0,0,0,.55)'; c.lineWidth=Math.max(1,R*.012); c.beginPath(); c.ellipse(0,F.ry*.04,F.rx,F.ry,0,0,7); c.stroke();
     c.strokeStyle='rgba(255,220,170,.13)'; c.lineWidth=Math.max(.8,R*.006); c.beginPath(); c.ellipse(0,-F.ry*.04,F.rx*.99,F.ry*.99,0,Math.PI*1.05,Math.PI*1.95); c.stroke();
     // the dimple: a shallow dent, lit from the top left
-    var dr=F.rx*.36, dg=c.createRadialGradient(dr*.25,dr*.3,0,0,0,dr);
+    var dr=F.dr*1.05, dg=c.createRadialGradient(dr*.25,dr*.3,0,0,0,dr);
     dg.addColorStop(0,'rgba(170,120,75,.5)'); dg.addColorStop(.55,'rgba(40,26,16,.65)'); dg.addColorStop(1,'rgba(0,0,0,.0)');
     c.fillStyle=dg; c.beginPath(); c.ellipse(0,0,dr,dr*F.ry/F.rx*1.05,0,0,7); c.fill();
     c.strokeStyle='rgba(0,0,0,.4)'; c.lineWidth=Math.max(.8,R*.006); c.beginPath(); c.ellipse(0,0,dr,dr*F.ry/F.rx*1.05,0,Math.PI*1.1,Math.PI*1.9); c.stroke();
@@ -878,6 +890,11 @@ function hpPaintBase(){
 function hpDraw(){
   var c=HP.ctx,w=HP.w,d=HP.dpr,tn=performance.now(),live=false,nts=panNotes();
   c.setTransform(d,0,0,d,0,0); c.clearRect(0,0,w,w); if(HP.base) c.drawImage(HP.base,0,0,w,w);
+  HP.taps=(HP.taps||[]).filter(function(t){return tn-t.t<700});
+  HP.taps.forEach(function(t){ var age=(tn-t.t)/700, r=HP.R*(.04+age*.22); live=true;
+    c.strokeStyle='rgba(255,226,190,'+(.55*(1-age))+')'; c.lineWidth=1.2; c.beginPath(); c.ellipse(t.x,t.y,r,r*HP.tilt,0,0,7); c.stroke();
+    var g=c.createRadialGradient(t.x,t.y,0,t.x,t.y,HP.R*.07); g.addColorStop(0,'rgba(255,236,210,'+(.5*(1-age))+')'); g.addColorStop(1,'rgba(255,236,210,0)');
+    c.fillStyle=g; c.fillRect(t.x-HP.R*.07,t.y-HP.R*.07,HP.R*.14,HP.R*.14); });
   HP.fields.forEach(function(F,k){
     var gl_=HP.glow[k]||0,age=gl_?(tn-gl_)/1000:9,e=Math.max(0,1-age/1.6);
     if(e>0){ live=true; var wob=1+Math.sin(age*60)*.012*e;
@@ -888,7 +905,7 @@ function hpDraw(){
       c.restore(); }
     var n=nts[k]; if(!n) return;
     c.font='600 '+Math.round(HP.R*(F.ding?.085:.068))+'px DM Sans,sans-serif'; c.textAlign='center'; c.textBaseline='middle';
-    var ly=F.y+(F.ding?F.ry*.48:0)+(F.ding?0:F.ry*.62);
+    var ly=HP.photo?F.y+(F.ding?F.dr*1.45:F.dr+HP.R*.055):F.y+(F.ding?F.ry*.48:0)+(F.ding?0:F.ry*.62);
     c.fillStyle='rgba(0,0,0,.55)'; c.fillText(n.name,F.x+.7,ly+.9);
     c.fillStyle=e>0?'rgba(255,224,186,'+(.6+.4*e)+')':'rgba(237,220,190,.55)'; c.fillText(n.name,F.x,ly);
     if(HP.w>300){c.font='500 '+Math.round(HP.R*.045)+'px DM Sans,sans-serif'; c.fillStyle='rgba(237,220,190,.32)'; c.fillText(n.sub,F.x,ly+HP.R*.07);}
@@ -896,11 +913,23 @@ function hpDraw(){
   HP.raf=live?requestAnimationFrame(hpDraw):0;
 }
 function hpKick(){ if(!HP.raf) HP.raf=requestAnimationFrame(hpDraw); }
-function hpPick(x,y){ // which field is under the finger — the nearest oval within reach
+function hpPick(x,y){ // a tone field under the finger, or -2 for the bare steel around them, or -1 off the pan
   var best=-1,bd=1e9;
   HP.fields.forEach(function(F,k){var dx=x-F.x,dy=y-F.y,cs=Math.cos(-F.rot),sn=Math.sin(-F.rot),u=(dx*cs-dy*sn)/F.rx,v=(dx*sn+dy*cs)/F.ry,dd=u*u+v*v;
     if(dd<bd){bd=dd;best=k;}});
-  var dx=x-HP.cx,dy=(y-HP.cy)/HP.tilt; return bd<2.6&&dx*dx+dy*dy<HP.R*HP.R*1.02?best:-1;
+  var dx=x-HP.cx,dy=(y-HP.cy)/HP.tilt, on=dx*dx+dy*dy<HP.R*HP.R*.97;
+  if(!on) return -1; return bd<=1?best:-2;
+}
+/* the "tak": a fingertip on the bare steel — a short, bright metallic knock that rings into the shell */
+function hpTak(vel){
+  ensure(); var t=now(),v=vel||1,out=ac.createGain(); out.gain.value=.5*v; out.connect(hpOut());
+  var n=noise(),bp=ac.createBiquadFilter(),ng=ac.createGain(); bp.type='bandpass'; bp.frequency.value=2600+Math.random()*500; bp.Q.value=3.5;
+  env(ng,t,.001,.55,.05); n.connect(bp); bp.connect(ng); ng.connect(out); n.start(t); n.stop(t+.09);
+  [[1240,.16,.16],[1873,.1,.12],[2961,.06,.08],[4410,.03,.05]].forEach(function(p){var o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=p[0]*(.97+Math.random()*.06);
+    env(g,t,.001,p[1],p[2]);o.connect(g);g.connect(out);o.start(t);o.stop(t+p[2]+.05);});
+  var k=ac.createOscillator(),kg=ac.createGain(); k.type='sine'; k.frequency.setValueAtTime(230,t); k.frequency.exponentialRampToValueAtTime(140,t+.06);
+  env(kg,t,.001,.32,.07); k.connect(kg); kg.connect(out); k.start(t); k.stop(t+.12);
+  pulse(cym.f,.6); buzz(4);
 }
 function hpStrike(k,vel){
   var nts=panNotes(),n=nts[k]; if(!n) return; ensure(); buzz(k?6:10);
@@ -911,15 +940,18 @@ function hpStrike(k,vel){
 }
 function buildHandpan(){
   var hp=$('#hp');
+  if(!HP_IMG){ HP_IMG=new Image(); HP_IMG.decoding='async'; HP_IMG.onload=function(){HP.key='';if(HP.cv)hpSize();}; HP_IMG.src='img/my-pan.webp'; }
   if(!HP.cv){ hp.innerHTML=''; HP.cv=document.createElement('canvas'); HP.cv.setAttribute('aria-label','Handpan — tap the tone fields'); hp.appendChild(HP.cv); HP.ctx=HP.cv.getContext('2d');
     HP.cv.addEventListener('pointerdown',function(e){e.preventDefault(); var r=HP.cv.getBoundingClientRect(),x=(e.clientX-r.left)*HP.w/r.width,y=(e.clientY-r.top)*HP.w/r.height,k=hpPick(x,y);
-      if(k<0) return; var F=HP.fields[k],dx=(x-F.x)/F.rx,dy=(y-F.y)/F.ry,c_=Math.sqrt(dx*dx+dy*dy); hpStrike(k,1-Math.min(.45,Math.abs(c_-.4)*.5));}); }
+      if(k===-1) return; if(k===-2){ hpTak(.9); HP.taps=(HP.taps||[]).concat([{x:x,y:y,t:performance.now()}]); hpKick(); return; }
+      var F=HP.fields[k],dx=(x-F.x)/F.rx,dy=(y-F.y)/F.ry,c_=Math.sqrt(dx*dx+dy*dy); hpStrike(k,1-Math.min(.45,Math.abs(c_-.35)*.5));}); }
   sizeInst(); hpSize(); $('#hpScale').textContent=panLabel(); buildPanEdit();
 }
 function hpSize(){
   var hp=$('#hp'),w=Math.round(hp.clientWidth)||300; if(!w) return; var d=Math.min(window.devicePixelRatio||1,2);
-  if(w===HP.w&&d===HP.dpr&&HP.base&&HP.key===pan.notes.join()+pan.i) return hpKick();
-  HP.w=w; HP.dpr=d; HP.key=pan.notes.join()+pan.i; HP.cv.width=HP.cv.height=Math.round(w*d); HP.cv.style.width=HP.cv.style.height=w+'px';
+  var key=pan.notes.join()+pan.i+(HP_IMG&&HP_IMG.complete?'p':'');
+  if(w===HP.w&&d===HP.dpr&&HP.base&&HP.key===key) return hpKick();
+  HP.w=w; HP.dpr=d; HP.key=key; HP.cv.width=HP.cv.height=Math.round(w*d); HP.cv.style.width=HP.cv.style.height=w+'px';
   hpLayout(); hpPaintBase(); hpKick();
 }
 function buildPanEdit(){
